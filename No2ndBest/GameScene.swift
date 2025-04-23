@@ -454,9 +454,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         symbolLabel.fontName = "AvenirNext-Bold"
         symbolLabel.fontSize = min(size/3, 16)
         symbolLabel.fontColor = .white
-        symbolLabel.position = CGPoint(x: 0, y: 0)
+        symbolLabel.position = CGPoint(x: 0, y: 5) // Moved up to make room for price
         symbolLabel.verticalAlignmentMode = .center
         bubble.addChild(symbolLabel)
+        
+        // Add price label (like in the original cryptobubbles)
+        let formattedPrice = String(format: "$%.2f", crypto.price)
+        let priceLabel = SKLabelNode(text: formattedPrice)
+        priceLabel.fontName = "AvenirNext"
+        priceLabel.fontSize = min(size/4, 12)
+        priceLabel.fontColor = .white
+        priceLabel.position = CGPoint(x: 0, y: -10) // Position below symbol
+        priceLabel.verticalAlignmentMode = .center
+        bubble.addChild(priceLabel)
         
         // Position the bubble in the upper area of the screen, above the game circle
         let safeAreaTop = self.size.height * 0.85
