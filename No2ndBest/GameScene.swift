@@ -8,7 +8,7 @@
 import SpriteKit
 import GameplayKit
 
-class GameScene: SKScene {
+class GameScene: SKScene, SKPhysicsContactDelegate {
     
     // Game elements
     private var centerCircle: SKShapeNode!
@@ -17,6 +17,10 @@ class GameScene: SKScene {
     private var scoreLabel: SKLabelNode!
     private var messageLabel: SKLabelNode!
     private var pathNodes: [SKShapeNode] = []
+    
+    // Crypto bubbles elements
+    private var cryptoBubbles: [SKNode] = []
+    private var dataUpdateTimer: Timer?
     
     // Game parameters
     private var radius: CGFloat = 0
@@ -33,12 +37,20 @@ class GameScene: SKScene {
     private var missedTaps: Int = 0
     private var maxMissedTaps: Int = 3  // Allow 3 missed taps before game over
     
+    // Physics categories for crypto bubbles
+    private let bubbleCategory: UInt32 = 0x1 << 0
+    private let ballCategory: UInt32 = 0x1 << 1
+    
     // Additional properties for pause functionality
     
     override func didMove(to view: SKView) {
         backgroundColor = .black
         setupGame()
         setupPauseButton()
+        setupCryptoBubbles()
+        
+        // Set up physics contact delegate
+        physicsWorld.contactDelegate = self
         
         // Load high score from UserDefaults
         highScore = UserDefaults.standard.integer(forKey: "highScore")
@@ -47,6 +59,14 @@ class GameScene: SKScene {
         if UserDefaults.standard.bool(forKey: "musicEnabled") {
             SoundManager.shared.startBackgroundMusic()
         }
+        
+        // Set up a timer to periodically fetch new cryptocurrency data
+        fetchCryptoData()
+        dataUpdateTimer = Timer.scheduledTimer(timeInterval: 60.0, target: self, selector: #selector(fetchCryptoData), userInfo: nil, repeats: true)
+    }
+    
+    deinit {
+        dataUpdateTimer?.invalidate()
     }
     
     private func setupGame() {
@@ -279,7 +299,7 @@ class GameScene: SKScene {
         // Create buttons
         let buttonWidth: CGFloat = size.width * 0.6
         let buttonHeight: CGFloat = 50
-        let buttonSpacing: CGFloat = 20
+        // buttonSpacing not used
         
         // Play again button
         let playAgainButton = createButton(text: "PLAY AGAIN", width: buttonWidth, height: buttonHeight, position: CGPoint(x: 0, y: -50))
@@ -350,6 +370,175 @@ class GameScene: SKScene {
             let group = SKAction.group([moveAction, fadeAction, scaleAction])
             
             particle.run(SKAction.sequence([group, SKAction.removeFromParent()]))
+        }
+    }
+    
+    // MARK: - Cryptocurrency Bubbles
+    
+    private func setupCryptoBubbles() {
+        // Set up physics world with zero gravity for bubbles
+        physicsWorld.gravity = CGVector(dx: 0, dy: 0)
+    }
+    
+    @objc private func fetchCryptoData() {
+        // URL for CoinGecko API - free and doesn't require API key for basic usage
+        let urlString = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false&price_change_percentage=24h"
+        
+        guard let url = URL(string: urlString) else { return }
+        
+        let task = URLSession.shared.dataTask(with: url) { [weak self] (data, response, error) in
+            guard let self = self, let data = data, error == nil else {
+                print("Error fetching crypto data: \(error?.localizedDescription ?? "Unknown error")")
+                return
+            }
+            
+            do {
+                // Parse JSON response
+                if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
+                    var cryptos: [CryptoCurrency] = []
+                    
+                    for item in json {
+                        if let symbol = item["symbol"] as? String,
+                           let name = item["name"] as? String,
+                           let price = item["current_price"] as? Double,
+                           let priceChange = item["price_change_percentage_24h"] as? Double,
+                           let marketCap = item["market_cap"] as? Double {
+                            
+                            let crypto = CryptoCurrency(
+                                symbol: symbol.uppercased(),
+                                name: name,
+                                price: price,
+                                priceChangePercentage24h: priceChange,
+                                marketCap: marketCap
+                            )
+                            cryptos.append(crypto)
+                        }
+                    }
+                    
+                    // Update UI on main thread
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self = self else { return }
+                        self.updateCryptoBubbles(with: cryptos)
+                    }
+                }
+            } catch {
+                print("Error parsing crypto data: \(error.localizedDescription)")
+            }
+        }
+        
+        task.resume()
+    }
+    
+    private func updateCryptoBubbles(with cryptos: [CryptoCurrency]) {
+        // Remove old bubbles
+        for bubble in cryptoBubbles {
+            bubble.removeFromParent()
+        }
+        cryptoBubbles.removeAll()
+        
+        // Create new bubbles
+        for crypto in cryptos {
+            createCryptoBubble(for: crypto)
+        }
+    }
+    
+    private func createCryptoBubble(for crypto: CryptoCurrency) {
+        let size = crypto.bubbleSize
+        let bubble = SKShapeNode(circleOfRadius: size/2)
+        bubble.fillColor = crypto.bubbleColor
+        bubble.strokeColor = .white
+        bubble.lineWidth = 1.5
+        
+        // Add the cryptocurrency symbol
+        let symbolLabel = SKLabelNode(text: crypto.symbol)
+        symbolLabel.fontName = "AvenirNext-Bold"
+        symbolLabel.fontSize = min(size/3, 16)
+        symbolLabel.fontColor = .white
+        symbolLabel.position = CGPoint(x: 0, y: 0)
+        symbolLabel.verticalAlignmentMode = .center
+        bubble.addChild(symbolLabel)
+        
+        // Position the bubble in the upper area of the screen, above the game circle
+        let safeAreaTop = self.size.height * 0.85
+        let safeAreaBottom = centerCircle.position.y + radius + size/2 + 20 // Above the circle with some padding
+        let xPos = CGFloat.random(in: size/2..<(self.size.width - size/2))
+        let yPos = CGFloat.random(in: safeAreaBottom..<safeAreaTop)
+        bubble.position = CGPoint(x: xPos, y: yPos)
+        
+        // Add physics body for interactions
+        bubble.physicsBody = SKPhysicsBody(circleOfRadius: size/2)
+        bubble.physicsBody?.isDynamic = true
+        bubble.physicsBody?.categoryBitMask = bubbleCategory
+        bubble.physicsBody?.contactTestBitMask = bubbleCategory  // Make bubbles interact with each other
+        bubble.physicsBody?.collisionBitMask = bubbleCategory | ballCategory  // Allow collision with other bubbles and the ball
+        bubble.physicsBody?.restitution = 0.7 // Bounciness
+        bubble.physicsBody?.linearDamping = 0.8 // Air resistance
+        
+        // Add gentle movement
+        let randomDuration = TimeInterval.random(in: 8...15)
+        let randomDirection = CGVector(
+            dx: CGFloat.random(in: -30...30),
+            dy: CGFloat.random(in: -10...10)
+        )
+        
+        let moveAction = SKAction.move(by: randomDirection, duration: randomDuration)
+        let moveReverse = SKAction.move(by: CGVector(dx: -randomDirection.dx, dy: -randomDirection.dy), duration: randomDuration)
+        let sequence = SKAction.sequence([moveAction, moveReverse])
+        let moveForever = SKAction.repeatForever(sequence)
+        bubble.run(moveForever)
+        
+        // Store the crypto data for later use
+        bubble.userData = NSMutableDictionary()
+        bubble.userData?.setValue(crypto.symbol, forKey: "symbol")
+        bubble.userData?.setValue(crypto.price, forKey: "price")
+        
+        // Add to scene and tracking array
+        addChild(bubble)
+        cryptoBubbles.append(bubble)
+    }
+    
+    // MARK: - Physics Contact
+    
+    func didBegin(_ contact: SKPhysicsContact) {
+        // Handle physics interactions if needed
+        // For now, we're just using physics for realistic movement
+    }
+    
+    // Keep bubbles in bounds
+    private func keepCryptoBubblesInBounds() {
+        for bubble in cryptoBubbles {
+            guard let bubbleNode = bubble as? SKShapeNode else { continue }
+            
+            let radius = bubbleNode.frame.width / 2
+            
+            // Constrain X position
+            if bubbleNode.position.x < radius {
+                bubbleNode.position.x = radius
+                if let physicsBody = bubbleNode.physicsBody, physicsBody.velocity.dx < 0 {
+                    physicsBody.velocity.dx = -physicsBody.velocity.dx * 0.8
+                }
+            } else if bubbleNode.position.x > size.width - radius {
+                bubbleNode.position.x = size.width - radius
+                if let physicsBody = bubbleNode.physicsBody, physicsBody.velocity.dx > 0 {
+                    physicsBody.velocity.dx = -physicsBody.velocity.dx * 0.8
+                }
+            }
+            
+            // Constrain Y position to upper area
+            let minY = centerCircle.position.y + radius + radius + 20 // Above the game circle
+            let maxY = size.height - radius
+            
+            if bubbleNode.position.y < minY {
+                bubbleNode.position.y = minY
+                if let physicsBody = bubbleNode.physicsBody, physicsBody.velocity.dy < 0 {
+                    physicsBody.velocity.dy = -physicsBody.velocity.dy * 0.8
+                }
+            } else if bubbleNode.position.y > maxY {
+                bubbleNode.position.y = maxY
+                if let physicsBody = bubbleNode.physicsBody, physicsBody.velocity.dy > 0 {
+                    physicsBody.velocity.dy = -physicsBody.velocity.dy * 0.8
+                }
+            }
         }
     }
     
@@ -640,6 +829,9 @@ class GameScene: SKScene {
     
     override func update(_ currentTime: TimeInterval) {
         self.currentTime = currentTime
+        
+        // Keep crypto bubbles within the play area
+        keepCryptoBubblesInBounds()
         
         // If game is not running, don't update
         if !gameRunning { return }
