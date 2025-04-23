@@ -2,7 +2,7 @@
 //  GameViewController.swift
 //  No2ndBest
 //
-//  Created by TR on 4/23/25.
+//  Created by TR on 4/12/25.
 //
 
 import UIKit
@@ -15,19 +15,20 @@ class GameViewController: UIViewController {
         super.viewDidLoad()
         
         if let view = self.view as! SKView? {
-            // Load the SKScene from 'GameScene.sks'
-            if let scene = SKScene(fileNamed: "GameScene") {
-                // Set the scale mode to scale to fit the window
-                scene.scaleMode = .aspectFill
-                
-                // Present the scene
-                view.presentScene(scene)
-            }
+            // Create the MenuScene programmatically instead of GameScene
+            let scene = MenuScene(size: view.bounds.size)
+            
+            // Set the scale mode to scale to fit the window
+            scene.scaleMode = .aspectFill
+            
+            // Present the scene
+            view.presentScene(scene)
             
             view.ignoresSiblingOrder = true
             
-            view.showsFPS = true
-            view.showsNodeCount = true
+            // Debug options - comment these out for production
+            view.showsFPS = false
+            view.showsNodeCount = false
         }
     }
 
