@@ -104,13 +104,13 @@ class MenuScene: SKScene {
         highScoreLabel.position = CGPoint(x: size.width/2, y: startY - 3 * (buttonHeight + buttonSpacing))
         addChild(highScoreLabel)
         
-        // Add copyright text
-        let copyrightLabel = SKLabelNode(fontNamed: "AvenirNext-Regular")
-        copyrightLabel.text = "© 2025 Super Games"
-        copyrightLabel.fontSize = 15
-        copyrightLabel.fontColor = .darkGray
-        copyrightLabel.position = CGPoint(x: size.width/2, y: 30)
-        addChild(copyrightLabel)
+        // Copyright text temporarily removed
+        // let copyrightLabel = SKLabelNode(fontNamed: "AvenirNext-Regular")
+        // copyrightLabel.text = "© 2025 Super Games"
+        // copyrightLabel.fontSize = 15
+        // copyrightLabel.fontColor = .darkGray
+        // copyrightLabel.position = CGPoint(x: size.width/2, y: 30)
+        // addChild(copyrightLabel)
     }
     
     private func createButton(text: String, width: CGFloat, height: CGFloat, position: CGPoint) -> SKShapeNode {
