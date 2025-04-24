@@ -436,6 +436,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         cryptoBubbles.removeAll()
         
+
+        
         // Create new bubbles (excluding Bitcoin)
         for crypto in cryptos {
             // Skip Bitcoin bubbles - only create bubbles for other cryptocurrencies
@@ -556,27 +558,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     private func setupPauseButton() {
-        // Create pause button in the top right corner
-        let pauseButton = SKShapeNode(circleOfRadius: 20)
-        pauseButton.fillColor = UIColor.darkGray.withAlphaComponent(0.7)
-        pauseButton.strokeColor = .white
-        pauseButton.lineWidth = 2
-        pauseButton.position = CGPoint(x: size.width - 40, y: size.height - 40)
-        pauseButton.name = "pauseButton"
-        pauseButton.zPosition = 10
-        addChild(pauseButton)
-        
-        // Add pause symbol
-        let pauseSymbol = SKShapeNode()
-        let path = CGMutablePath()
-        path.move(to: CGPoint(x: -5, y: -7))
-        path.addLine(to: CGPoint(x: -5, y: 7))
-        path.move(to: CGPoint(x: 5, y: -7))
-        path.addLine(to: CGPoint(x: 5, y: 7))
-        pauseSymbol.path = path
-        pauseSymbol.strokeColor = .white
-        pauseSymbol.lineWidth = 3
-        pauseButton.addChild(pauseSymbol)
+        // Pause button - temporarily hidden due to functionality issues
+        // let pauseButton = SKShapeNode(circleOfRadius: 20)
+        // pauseButton.fillColor = UIColor.darkGray.withAlphaComponent(0.7)
+        // pauseButton.strokeColor = .white
+        // pauseButton.lineWidth = 2
+        // pauseButton.position = CGPoint(x: size.width - 40, y: size.height - 40)
+        // pauseButton.name = "pauseButton"
+        // pauseButton.zPosition = 10
+        // addChild(pauseButton)
+        // 
+        // // Pause icon
+        // let pauseSymbol = SKNode()
+        // let bar1 = SKShapeNode(rectOf: CGSize(width: 4, height: 16))
+        // bar1.fillColor = .white
+        // bar1.strokeColor = .clear
+        // bar1.position = CGPoint(x: -4, y: 0)
+        // pauseSymbol.addChild(bar1)
+        // 
+        // let bar2 = SKShapeNode(rectOf: CGSize(width: 4, height: 16))
+        // bar2.fillColor = .white
+        // bar2.strokeColor = .clear
+        // bar2.position = CGPoint(x: 4, y: 0)
+        // pauseSymbol.addChild(bar2)
+        // 
+        // pauseButton.addChild(pauseSymbol)
     }
     
     private func showPauseMenu() {
@@ -677,12 +683,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Handle button taps first (using first touch only)
         for node in nodes {
-            // Pause button
-            if node.name == "pauseButton" || node.parent?.name == "pauseButton" {
-                SoundManager.shared.playSound(.buttonTap)
-                showPauseMenu()
-                return
-            }
+            // Pause button - temporarily disabled
+            // if node.name == "pauseButton" || node.parent?.name == "pauseButton" {
+            //     SoundManager.shared.playSound(.buttonTap)
+            //     showPauseMenu()
+            //     return
+            // }
             
             // Resume button
             if node.name == "resume" || node.parent?.name == "resume" {
