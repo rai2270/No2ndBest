@@ -436,9 +436,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         cryptoBubbles.removeAll()
         
-        // Create new bubbles
+        // Create new bubbles (excluding Bitcoin)
         for crypto in cryptos {
-            createCryptoBubble(for: crypto)
+            // Skip Bitcoin bubbles - only create bubbles for other cryptocurrencies
+            if crypto.symbol.lowercased() != "btc" {
+                createCryptoBubble(for: crypto)
+            }
         }
     }
     
