@@ -993,6 +993,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let explosion = createSimpleExplosion(at: bubble.position)
         addChild(explosion)
         
+        // Display Michael Saylor quote at bottom of screen
+        showSaylorQuote()
+        
         // Remove the bubble
         bubble.removeFromParent()
         if let index = cryptoBubbles.firstIndex(of: bubble) {
@@ -1002,6 +1005,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Check if all bubbles are gone, and if so, fetch new data immediately
         if cryptoBubbles.isEmpty {
             fetchCryptoData()
+            
+            // If we've had issues with API, create some fallback bubbles after a short delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                guard let self = self, self.cryptoBubbles.isEmpty else { return }
+                
+                // Create fallback bubbles if API failed
+                self.createFallbackBubbles()
+            }
         }
         
         // Play sound effect
@@ -1010,6 +1021,88 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Provide haptic feedback
         let generator = UIImpactFeedbackGenerator(style: .heavy)
         generator.impactOccurred()
+    }
+    
+    // Create fallback bubbles when API fetch fails
+    private func createFallbackBubbles() {
+        // Only create fallbacks if we don't have any bubbles
+        guard cryptoBubbles.isEmpty else { return }
+        
+        // Create some dummy alt coins
+        let altCoins = [
+            (symbol: "ETH", name: "Ethereum", color: UIColor.green),
+            (symbol: "SOL", name: "Solana", color: UIColor.purple),
+            (symbol: "ADA", name: "Cardano", color: UIColor.blue),
+            (symbol: "XRP", name: "Ripple", color: UIColor.cyan),
+            (symbol: "DOT", name: "Polkadot", color: UIColor.magenta)
+        ]
+        
+        // Create bubbles for each alt coin
+        for (i, coin) in altCoins.enumerated() {
+            // Create bubble at random position
+            let bubble = SKShapeNode(circleOfRadius: CGFloat.random(in: 25...40))
+            bubble.fillColor = coin.color
+            bubble.strokeColor = .white
+            bubble.lineWidth = 1.5
+            
+            // Position randomly but ensure it's within the screen bounds
+            let padding: CGFloat = 50
+            let xPos = CGFloat.random(in: padding...(size.width - padding))
+            let yPos = CGFloat.random(in: padding...(size.height - padding))
+            bubble.position = CGPoint(x: xPos, y: yPos)
+            
+            // Add symbol label
+            let symbolLabel = SKLabelNode(text: coin.symbol)
+            symbolLabel.fontName = "AvenirNext-Bold"
+            symbolLabel.fontSize = 16
+            symbolLabel.fontColor = .white
+            symbolLabel.position = CGPoint(x: 0, y: 0)
+            symbolLabel.verticalAlignmentMode = .center
+            bubble.addChild(symbolLabel)
+            
+            // Store the bubble
+            addChild(bubble)
+            cryptoBubbles.append(bubble)
+        }
+    }
+    
+    // Show Michael Saylor quote at bottom of screen
+    private func showSaylorQuote() {
+        // Array of Michael Saylor Bitcoin quotes
+        let saylorQuotes = [
+            "There is no second best.",
+            "Bitcoin is digital gold in the palm of your hand.",
+            "Bitcoin is a swarm of cyber hornets serving the goddess of wisdom.",
+            "The winners of the 21st century are going to be the people that own high-quality scarce assets.",
+            "You don't need to buy a whole Bitcoin. Stack sats.",
+            "Bitcoin is hope.",
+            "I have seen the future and it is Bitcoin.",
+            "Bitcoin is the first engineered safe-haven asset.",
+            "Bitcoin is inevitable.",
+            "Bitcoin is economic security."
+        ]
+        
+        // Pick a random quote
+        let quote = saylorQuotes.randomElement() ?? "There is no second best."
+        
+        // Create label for the quote
+        let quoteLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        quoteLabel.text = quote
+        quoteLabel.fontSize = 18
+        quoteLabel.fontColor = .orange
+        quoteLabel.position = CGPoint(x: size.width/2, y: 50)
+        quoteLabel.zPosition = 100
+        addChild(quoteLabel)
+        
+        // Animate the quote
+        let fadeIn = SKAction.fadeIn(withDuration: 0.3)
+        let wait = SKAction.wait(forDuration: 1.2)
+        let fadeOut = SKAction.fadeOut(withDuration: 0.5)
+        let remove = SKAction.removeFromParent()
+        let sequence = SKAction.sequence([fadeIn, wait, fadeOut, remove])
+        
+        quoteLabel.alpha = 0
+        quoteLabel.run(sequence)
     }
     
     // Create a simple explosion effect
