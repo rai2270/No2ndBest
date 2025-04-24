@@ -436,9 +436,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         cryptoBubbles.removeAll()
         
-        // Create new bubbles
+        // Create new bubbles (excluding Bitcoin)
         for crypto in cryptos {
-            createCryptoBubble(for: crypto)
+            // Skip Bitcoin bubbles - only create bubbles for other cryptocurrencies
+            if crypto.symbol.lowercased() != "btc" {
+                createCryptoBubble(for: crypto)
+            }
         }
     }
     
@@ -744,6 +747,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 totalSuccessfulTaps += 1
                 hadSuccessfulTap = true
                 
+                // Fire lightning attack on successful tap
+                fireLightningAttack()
+                
                 // Play success sound
                 SoundManager.shared.playSound(.successTap)
                 
@@ -873,5 +879,166 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 node.setScale(1.0)
             }
         }
+    }
+    
+    // MARK: - Lightning Attack Methods
+    
+    // Fire lightning attack at cryptocurrency bubbles
+    private func fireLightningAttack() {
+        // Only proceed if there are bubbles to target
+        guard !cryptoBubbles.isEmpty else { return }
+        
+        // Find the largest bubble to target
+        var targetBubble: SKNode? = nil
+        var maxSize: CGFloat = 0
+        
+        for bubble in cryptoBubbles {
+            guard let bubbleNode = bubble as? SKShapeNode else { continue }
+            
+            // Get the bubble size
+            let bubbleSize = bubbleNode.frame.width
+            
+            // If this is the largest bubble so far, make it the target
+            if bubbleSize > maxSize {
+                maxSize = bubbleSize
+                targetBubble = bubble
+            }
+        }
+        
+        // If we have a target, create lightning effect to it
+        if let target = targetBubble {
+            // Create the lightning bolt effect from center circle to target
+            createLightningBolt(from: centerCircle.position, to: target.position) { [weak self] in
+                self?.handleBubbleHit(bubble: target)
+            }
+        }
+    }
+    
+    // Create a lightning bolt visual effect
+    private func createLightningBolt(from startPoint: CGPoint, to endPoint: CGPoint, completion: @escaping () -> Void) {
+        // Calculate distance and angle between points
+        let dx = endPoint.x - startPoint.x
+        let dy = endPoint.y - startPoint.y
+        let distance = sqrt(dx*dx + dy*dy)
+        
+        // Create a path for the lightning
+        let path = CGMutablePath()
+        path.move(to: startPoint)
+        
+        // Create zigzag pattern
+        var currentPoint = startPoint
+        let segments = 8
+        let segmentLength = distance / CGFloat(segments)
+        
+        for i in 1...segments {
+            let segmentEndX = startPoint.x + dx * CGFloat(i) / CGFloat(segments)
+            let segmentEndY = startPoint.y + dy * CGFloat(i) / CGFloat(segments)
+            let idealEnd = CGPoint(x: segmentEndX, y: segmentEndY)
+            
+            // Add some randomness to zigzag except for the last segment
+            if i < segments {
+                let randomOffsetX = CGFloat.random(in: -segmentLength/3...segmentLength/3)
+                let randomOffsetY = CGFloat.random(in: -segmentLength/3...segmentLength/3)
+                currentPoint = CGPoint(x: idealEnd.x + randomOffsetX, y: idealEnd.y + randomOffsetY)
+            } else {
+                currentPoint = endPoint // Make sure we end exactly at the target
+            }
+            
+            path.addLine(to: currentPoint)
+        }
+        
+        // Create the lightning shape node
+        let lightning = SKShapeNode(path: path)
+        lightning.strokeColor = .white
+        lightning.lineWidth = 4
+        lightning.glowWidth = 2
+        lightning.lineCap = .round
+        lightning.zPosition = 200
+        addChild(lightning)
+        
+        // Add a glow effect
+        let glow = SKShapeNode(path: path)
+        glow.strokeColor = .systemBlue
+        glow.lineWidth = 8
+        glow.alpha = 0.5
+        glow.zPosition = 199
+        addChild(glow)
+        
+        // Animate the lightning effect
+        let fadeAction = SKAction.sequence([
+            SKAction.wait(forDuration: 0.1),
+            SKAction.fadeOut(withDuration: 0.2),
+            SKAction.run {
+                lightning.removeFromParent()
+                glow.removeFromParent()
+                completion() // Call completion after lightning effect is done
+            }
+        ])
+        
+        lightning.run(fadeAction)
+        glow.run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.1),
+            SKAction.fadeOut(withDuration: 0.2)
+        ]))
+    }
+    
+    // Handle what happens when a bubble is hit by lightning
+    private func handleBubbleHit(bubble: SKNode) {
+        // Create explosion effect at bubble position
+        let explosion = createSimpleExplosion(at: bubble.position)
+        addChild(explosion)
+        
+        // Remove the bubble
+        bubble.removeFromParent()
+        if let index = cryptoBubbles.firstIndex(of: bubble) {
+            cryptoBubbles.remove(at: index)
+        }
+        
+        // Check if all bubbles are gone, and if so, fetch new data immediately
+        if cryptoBubbles.isEmpty {
+            fetchCryptoData()
+        }
+        
+        // Play sound effect
+        SoundManager.shared.playSound(.successTap)
+        
+        // Provide haptic feedback
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.impactOccurred()
+    }
+    
+    // Create a simple explosion effect
+    private func createSimpleExplosion(at position: CGPoint) -> SKNode {
+        let container = SKNode()
+        container.position = position
+        container.zPosition = 150
+        
+        // Create particles
+        for _ in 1...15 {
+            let particle = SKShapeNode(circleOfRadius: CGFloat.random(in: 2...6))
+            particle.fillColor = .orange
+            particle.strokeColor = .white
+            particle.lineWidth = 1
+            particle.position = .zero
+            container.addChild(particle)
+            
+            // Random direction and speed
+            let angle = CGFloat.random(in: 0...(2 * .pi))
+            let distance = CGFloat.random(in: 30...60)
+            let destination = CGPoint(x: cos(angle) * distance, y: sin(angle) * distance)
+            
+            // Animate
+            let move = SKAction.move(to: destination, duration: 0.6)
+            let fade = SKAction.fadeOut(withDuration: 0.6)
+            particle.run(SKAction.group([move, fade]))
+        }
+        
+        // Remove container after animation completes
+        container.run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.7),
+            SKAction.removeFromParent()
+        ]))
+        
+        return container
     }
 }
