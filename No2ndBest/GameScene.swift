@@ -991,6 +991,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             cryptoBubbles.remove(at: index)
         }
         
+        // Check if all bubbles are gone, and if so, fetch new data immediately
+        if cryptoBubbles.isEmpty {
+            fetchCryptoData()
+        }
+        
         // Play sound effect
         SoundManager.shared.playSound(.successTap)
         
