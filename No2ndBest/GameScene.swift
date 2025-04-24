@@ -666,11 +666,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-        let location = touch.location(in: self)
-        let nodes = self.nodes(at: location)
+        // Limit to maximum 2 touches at once
+        let limitedTouches = touches.prefix(2)
+        guard !limitedTouches.isEmpty else { return }
         
-        // Handle button taps first
+        // Process first touch for UI interactions
+        let firstTouch = limitedTouches.first!
+        let firstLocation = firstTouch.location(in: self)
+        let nodes = self.nodes(at: firstLocation)
+        
+        // Handle button taps first (using first touch only)
         for node in nodes {
             // Pause button
             if node.name == "pauseButton" || node.parent?.name == "pauseButton" {
@@ -736,8 +741,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let targetDistance = hypot(ball.position.x - tapTarget.position.x, ball.position.y - tapTarget.position.y)
         let targetThreshold = ballRadius * 5   // adjust to taste
         
-        // Process each touch in the set
-        for touch in touches {
+        // Process only up to 2 touches for gameplay
+        for touch in limitedTouches {
             let location = touch.location(in: self)
             
             // Ball must be inside the top tap circle *and* the user must hit it
