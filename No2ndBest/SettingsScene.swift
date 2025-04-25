@@ -146,29 +146,71 @@ class SettingsScene: SKScene {
         let segmentWidth: CGFloat = 60
         let totalWidth: CGFloat = segmentWidth * CGFloat(difficultyOptions.count)
         
+        // Create a background with a subtle gradient
         difficultyControl = SKShapeNode(rectOf: CGSize(width: totalWidth, height: 35), cornerRadius: 5)
         difficultyControl.position = CGPoint(x: size.width * 0.7, y: y)
-        difficultyControl.fillColor = .darkGray
-        difficultyControl.strokeColor = .lightGray
-        difficultyControl.lineWidth = 1
+        difficultyControl.fillColor = UIColor(red: 40/255, green: 40/255, blue: 45/255, alpha: 1.0) // Slightly lighter than darkGray
+        difficultyControl.strokeColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 0.6) // Bitcoin orange border
+        difficultyControl.lineWidth = 1.5
         difficultyControl.name = "difficultyControl"
+        
+        // Add subtle inner shadow
+        let innerShadow = SKShapeNode(rectOf: CGSize(width: totalWidth - 2, height: 33), cornerRadius: 4)
+        innerShadow.fillColor = UIColor(red: 30/255, green: 30/255, blue: 35/255, alpha: 0.5)
+        innerShadow.strokeColor = .clear
+        innerShadow.position = CGPoint(x: 0, y: -1)
+        innerShadow.zPosition = 0.5
+        difficultyControl.addChild(innerShadow)
+        
         addChild(difficultyControl)
         
-        // Add selector indicator
+        // Add selector indicator with Bitcoin orange color and glow effect
         let selectedSegment = SKShapeNode(rectOf: CGSize(width: segmentWidth - 4, height: 31), cornerRadius: 3)
-        selectedSegment.fillColor = .cyan
+        selectedSegment.fillColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0) // Bitcoin orange
         selectedSegment.strokeColor = .clear
         selectedSegment.position = CGPoint(x: -totalWidth/2 + segmentWidth/2 + CGFloat(difficulty) * segmentWidth, y: 0)
         selectedSegment.name = "selectedSegment"
         selectedSegment.zPosition = 1
+        
+        // Add glow effect to selected segment
+        let glow = SKEffectNode()
+        glow.shouldEnableEffects = true
+        glow.filter = CIFilter(name: "CIGaussianBlur", parameters: ["inputRadius": 3.0])
+        let glowShape = SKShapeNode(rectOf: CGSize(width: segmentWidth - 4, height: 31), cornerRadius: 3)
+        glowShape.fillColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 0.5)
+        glowShape.strokeColor = .clear
+        glow.addChild(glowShape)
+        glow.zPosition = 0.5
+        selectedSegment.addChild(glow)
+        
         difficultyControl.addChild(selectedSegment)
         
-        // Add text labels for options
+        // Add text labels for options with improved contrast
         for (index, option) in difficultyOptions.enumerated() {
             let optionLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
             optionLabel.text = option
             optionLabel.fontSize = 16
-            optionLabel.fontColor = index == difficulty ? .black : .white
+            
+            // Enhanced contrast for the text
+            if index == difficulty {
+                optionLabel.fontColor = .black // Black text on orange background
+                
+                // Add a small Bitcoin symbol for the selected option
+                if index == 1 { // Medium difficulty, add Bitcoin symbol
+                    let btcSymbol = SKLabelNode(fontNamed: "AvenirNext-Bold")
+                    btcSymbol.text = "₿"
+                    btcSymbol.fontSize = 12
+                    btcSymbol.fontColor = .black
+                    btcSymbol.position = CGPoint(x: optionLabel.position.x + 35, y: -12)
+                    btcSymbol.verticalAlignmentMode = .center
+                    btcSymbol.alpha = 0.7
+                    btcSymbol.zPosition = 2
+                    difficultyControl.addChild(btcSymbol)
+                }
+            } else {
+                optionLabel.fontColor = UIColor(white: 1.0, alpha: 0.9) // Slightly off-white for better contrast
+            }
+            
             optionLabel.position = CGPoint(x: -totalWidth/2 + segmentWidth/2 + CGFloat(index) * segmentWidth, y: 0)
             optionLabel.verticalAlignmentMode = .center
             optionLabel.name = "option\(index)"
