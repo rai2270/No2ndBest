@@ -1088,8 +1088,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Only proceed if there are bubbles to target
         guard !cryptoBubbles.isEmpty else { return }
         
-        // Randomly select how many simultaneous lightning strikes (4-9)
-        let numberOfStrikes = Int.random(in: 4...9)
+        // Randomly select how many simultaneous lightning strikes (2-4)
+        let numberOfStrikes = Int.random(in: 2...4)
         
         // Ensure we don't try to hit more bubbles than exist
         let strikes = min(numberOfStrikes, cryptoBubbles.count)
