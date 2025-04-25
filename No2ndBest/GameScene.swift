@@ -94,18 +94,50 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             star.run(SKAction.repeatForever(fadeAction))
         }
         
-        // Create path markers
+        // Create Bitcoin circuit-styled path
+        
+        // First, create the main circular path
+        let mainPath = SKShapeNode(circleOfRadius: radius)
+        mainPath.strokeColor = UIColor(red: 0.95, green: 0.7, blue: 0.2, alpha: 0.4) // Bitcoin gold color
+        mainPath.lineWidth = 2
+        mainPath.position = center
+        mainPath.zPosition = -1
+        addChild(mainPath)
+        
+        // Add node markers along the path
         for i in 0..<16 {
             let angle = 2 * CGFloat.pi * CGFloat(i) / 16.0
             let xPos = center.x + cos(angle) * radius
             let yPos = center.y + sin(angle) * radius
             
-            let pathNode = SKShapeNode(circleOfRadius: 4)
-            pathNode.position = CGPoint(x: xPos, y: yPos)
-            pathNode.fillColor = i % 4 == 0 ? .yellow : .gray
-            pathNode.alpha = 0.7
-            addChild(pathNode)
-            pathNodes.append(pathNode)
+            // Create larger node points at key positions (every 4th node)
+            if i % 4 == 0 {
+                // Major node - hexagonal shape to resemble Bitcoin network nodes
+                let majorNode = SKShapeNode(circleOfRadius: 7)
+                majorNode.position = CGPoint(x: xPos, y: yPos)
+                majorNode.fillColor = .orange
+                majorNode.strokeColor = .white
+                majorNode.lineWidth = 1
+                majorNode.alpha = 0.8
+                
+                // Add subtle pulsing animation to major nodes
+                let pulse = SKAction.sequence([
+                    SKAction.scale(to: 1.2, duration: 1.5),
+                    SKAction.scale(to: 1.0, duration: 1.5)
+                ])
+                majorNode.run(SKAction.repeatForever(pulse))
+                
+                addChild(majorNode)
+                pathNodes.append(majorNode)
+            } else {
+                // Minor node - simple dot
+                let minorNode = SKShapeNode(circleOfRadius: 3)
+                minorNode.position = CGPoint(x: xPos, y: yPos)
+                minorNode.fillColor = .white
+                minorNode.alpha = 0.5
+                addChild(minorNode)
+                pathNodes.append(minorNode)
+            }
         }
         
         // Create center circle
@@ -141,17 +173,45 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         messageLabel.fontColor = .systemBlue
         addChild(messageLabel)
         
-        // Create tap target position
+        // Create tap target position (Lightning Node)
         let tapPosition = CGPoint(x: center.x, y: center.y + radius)
-        tapTarget = SKShapeNode(circleOfRadius: ballRadius * 1.5)
-        tapTarget.position = tapPosition
-        tapTarget.fillColor = .red
-        tapTarget.alpha = 0.7
         
-        // Pulse animation for the target
+        // Create lightning node container
+        tapTarget = SKShapeNode(circleOfRadius: ballRadius * 1.6)
+        tapTarget.position = tapPosition
+        tapTarget.fillColor = UIColor(red: 0.95, green: 0.7, blue: 0.2, alpha: 0.2) // Bitcoin gold with transparency
+        tapTarget.strokeColor = .orange
+        tapTarget.lineWidth = 2
+        
+        // Add lightning bolt icon in center
+        let lightningNode = SKShapeNode()
+        let lightningPath = CGMutablePath()
+        let boltSize = ballRadius * 0.8
+        
+        // Draw simple lightning bolt zigzag
+        lightningPath.move(to: CGPoint(x: 0, y: boltSize))
+        lightningPath.addLine(to: CGPoint(x: -boltSize/2, y: boltSize/4))
+        lightningPath.addLine(to: CGPoint(x: 0, y: 0))
+        lightningPath.addLine(to: CGPoint(x: boltSize/2, y: -boltSize/4))
+        lightningPath.addLine(to: CGPoint(x: 0, y: -boltSize))
+        
+        lightningNode.path = lightningPath
+        lightningNode.strokeColor = .white
+        lightningNode.lineWidth = 3
+        lightningNode.lineCap = .round
+        lightningNode.lineJoin = .round
+        tapTarget.addChild(lightningNode)
+        
+        // Enhanced pulse animation
         let pulseAction = SKAction.sequence([
-            SKAction.scale(to: 1.1, duration: 0.5),
-            SKAction.scale(to: 0.9, duration: 0.5)
+            SKAction.group([
+                SKAction.scale(to: 1.2, duration: 0.5),
+                SKAction.fadeAlpha(to: 0.9, duration: 0.5)
+            ]),
+            SKAction.group([
+                SKAction.scale(to: 0.9, duration: 0.5),
+                SKAction.fadeAlpha(to: 0.6, duration: 0.5)
+            ])
         ])
         tapTarget.run(SKAction.repeatForever(pulseAction))
         addChild(tapTarget)
