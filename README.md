@@ -4,26 +4,26 @@ A Bitcoin-themed iOS arcade game created with SpriteKit where players destroy al
 
 ## Description
 
-"There is no second best" - Michael Saylor
+"There is no second best"
 
-No2ndBest is a fast-paced Bitcoin-themed mobile game that challenges players to tap in rhythm with a moving target while launching lightning attacks to destroy altcoin bubbles. The game's name and philosophy are inspired by Michael Saylor's famous quote about Bitcoin: "There is no second best."
+No2ndBest is a fast-paced Bitcoin-themed mobile game that challenges players to tap in rhythm with a moving target while launching lightning attacks to destroy altcoin bubbles. The game's name and philosophy are inspired by the famous Bitcoin maxim: "There is no second best."
 
 ## Features
 
-- **Lightning Attack System**: Successfully tap the target to trigger lightning strikes that destroy altcoin bubbles
+- **Multi-Lightning Attack System**: Successfully tap the target to trigger multiple simultaneous lightning strikes that destroy 4-9 altcoin bubbles at once
 - **Real-time Crypto Data**: Fetches live cryptocurrency data from CoinGecko API
 - **Bitcoin Dominance Meter**: Track Bitcoin's market dominance as you play
-- **Michael Saylor Quotes**: Famous Bitcoin maximalist quotes appear when bubbles pop
-- **Smooth Animations**: Fluid ball movement and particle effects for explosions
+- **Bitcoin Wisdom**: Famous Bitcoin maximalist quotes appear when bubbles pop
+- **Rich Visual Effects**: Smooth animations with fluid ball movement, colorful explosion particles, and shimmering bubble effects
 - **Two-Finger Support**: Play with up to two fingers for advanced gameplay
 
 ## Gameplay
 
 1. Tap the screen to start the game
 2. Time your taps to hit the moving target at the top of the screen
-3. When you successfully tap, a lightning bolt will strike the largest altcoin bubble
+3. When you successfully tap, multiple lightning bolts will strike several altcoin bubbles simultaneously
 4. Destroy all altcoin bubbles to progress and increase your score
-5. Watch for Michael Saylor's Bitcoin wisdom with each successful hit
+5. Watch for Bitcoin wisdom quotes with each successful hit
 
 ## Requirements
 
@@ -39,13 +39,20 @@ No2ndBest is a fast-paced Bitcoin-themed mobile game that challenges players to 
 
 ## Inspiration
 
-This game was inspired by Michael Saylor's Bitcoin philosophy, particularly his famous quote "There is no second best" about Bitcoin's unique position in the cryptocurrency space. Read more about this perspective in [Bitcoin: There is No Second Best](https://medium.com/roymavila/bitcoin-there-is-no-second-best-michael-saylor-e56a68f474b8).
+This game was inspired by the Bitcoin maximalist philosophy, particularly the famous maxim "There is no second best" about Bitcoin's unique position in the cryptocurrency space.
+
+## Features Recently Added
+
+- Enhanced Bitcoin-themed main menu with glowing effects
+- Increased bubble density with 50+ unique cryptocurrency bubbles on screen
+- Colorful explosion effects when bubbles collide with the center circle
+- Shimmering effect on all cryptocurrency bubbles
+- Sequential display of Bitcoin wisdom quotes
 
 ## Future Plans
 
 - Additional power-ups and gameplay mechanics
 - Leaderboard integration
-- More visual effects and animations
 - Achievement system
 - Bitcoin Lightning Network integration
 
