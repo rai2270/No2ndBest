@@ -53,27 +53,60 @@ class MenuScene: SKScene {
         // Create decorative ball and circle
         let circle = SKShapeNode(circleOfRadius: 80)
         circle.position = CGPoint(x: size.width/2, y: size.height * 0.63)
-        circle.strokeColor = .cyan
+        circle.strokeColor = UIColor(red: 0, green: 0.7, blue: 0.9, alpha: 1.0) // Brighter cyan that matches game style
         circle.lineWidth = 2
         circle.fillColor = .clear
         addChild(circle)
         
+        // Create Bitcoin-styled ball (matching the gameplay style)
         let ball = SKShapeNode(circleOfRadius: 20)
-        ball.fillColor = .green
-        ball.strokeColor = .white
-        ball.lineWidth = 1
+        let bitcoinColor = UIColor(red: 0.95, green: 0.7, blue: 0.2, alpha: 1.0) // Bitcoin gold color
+        ball.fillColor = bitcoinColor
+        ball.strokeColor = .orange
+        ball.lineWidth = 1.5
         ball.position = CGPoint(x: size.width/2, y: size.height * 0.63 + 80) // Position at the top of the circle
+        
+        // Add Bitcoin "₿" symbol to the ball
+        let bitcoinSymbol = SKLabelNode(text: "₿")
+        bitcoinSymbol.fontSize = 24
+        bitcoinSymbol.fontName = "AvenirNext-Bold"
+        bitcoinSymbol.verticalAlignmentMode = .center
+        bitcoinSymbol.horizontalAlignmentMode = .center
+        bitcoinSymbol.fontColor = .white
+        bitcoinSymbol.name = "bitcoinSymbol"
+        ball.addChild(bitcoinSymbol)
+        
+        // Add glow effect
+        let glow = SKShapeNode(circleOfRadius: 22)
+        glow.fillColor = bitcoinColor.withAlphaComponent(0.3)
+        glow.strokeColor = .clear
+        glow.position = .zero
+        glow.zPosition = -1
+        ball.addChild(glow)
+        
+        // Add pulsing glow animation
+        let pulseAction = SKAction.sequence([
+            SKAction.scale(to: 1.2, duration: 0.5),
+            SKAction.scale(to: 0.8, duration: 0.5)
+        ])
+        glow.run(SKAction.repeatForever(pulseAction))
+        
+        // Add continuous rotation animation to the Bitcoin symbol
+        let rotateSymbolAction = SKAction.rotate(byAngle: .pi * 2, duration: 3.0)
+        bitcoinSymbol.run(SKAction.repeatForever(rotateSymbolAction))
+        
         addChild(ball)
         
-        // Add rotation animation to the ball
-        let rotateAction = SKAction.customAction(withDuration: 3.0) { _, time in
+        // Add rotation animation to the ball around the circular path
+        let rotateAction = SKAction.customAction(withDuration: 3.0) { [weak self] node, time in
+            guard let self = self else { return }
             let angle = time * 2 * .pi
             let radius: CGFloat = 80
             let centerX = self.size.width/2
             let centerY = self.size.height * 0.63
             
-            ball.position.x = centerX + cos(angle) * radius
-            ball.position.y = centerY + sin(angle) * radius
+            node.position.x = centerX + cos(angle) * radius
+            node.position.y = centerY + sin(angle) * radius
         }
         ball.run(SKAction.repeatForever(rotateAction))
         
