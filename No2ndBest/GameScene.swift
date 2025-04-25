@@ -230,6 +230,35 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             ])
         ])
         tapTarget.run(SKAction.repeatForever(pulseAction))
+        
+        // Add "TAP HERE" text with arrow for new users
+        let tapHereLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        tapHereLabel.text = "TAP HERE!"
+        tapHereLabel.fontSize = 20
+        tapHereLabel.fontColor = .white
+        tapHereLabel.position = CGPoint(x: 0, y: ballRadius * 3)
+        tapHereLabel.name = "tapHereLabel"
+        
+        // Add arrow pointing to target
+        let arrowNode = SKShapeNode()
+        let arrowPath = CGMutablePath()
+        arrowPath.move(to: CGPoint(x: 0, y: ballRadius * 2.3))
+        arrowPath.addLine(to: CGPoint(x: 0, y: ballRadius * 1.8))
+        arrowNode.path = arrowPath
+        arrowNode.strokeColor = .white
+        arrowNode.lineWidth = 2
+        arrowNode.name = "tapArrow"
+        
+        // Add animations for better visibility
+        let fadeSequence = SKAction.sequence([
+            SKAction.fadeAlpha(to: 0.5, duration: 0.5),
+            SKAction.fadeAlpha(to: 1.0, duration: 0.5)
+        ])
+        tapHereLabel.run(SKAction.repeatForever(fadeSequence))
+        arrowNode.run(SKAction.repeatForever(fadeSequence))
+        
+        tapTarget.addChild(tapHereLabel)
+        tapTarget.addChild(arrowNode)
         addChild(tapTarget)
         
         // Create Bitcoin-styled ball
@@ -269,7 +298,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.addChild(glowEffect)
         
         // Add subtle rotation animation
-        ball.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat.pi * 2, duration: 12.0)))
+        ball.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat.pi * 2, duration: 6.0)))
         
         addChild(ball)
         
@@ -1059,7 +1088,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
         // Update ball position along circular path
-        pathAngle += 0.02 * gameSpeed
+        pathAngle += 0.04 * gameSpeed  // Doubled from 0.02 to 0.04 for faster initial movement
         let center = CGPoint(x: size.width/2, y: size.height/2)
         
         ball.position.x = center.x + cos(pathAngle) * radius
