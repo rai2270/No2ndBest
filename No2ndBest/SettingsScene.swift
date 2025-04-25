@@ -133,7 +133,7 @@ class SettingsScene: SKScene {
         label.text = "Difficulty"
         label.fontSize = 24
         label.fontColor = .white
-        label.position = CGPoint(x: size.width * 0.3, y: y)
+        label.position = CGPoint(x: size.width * 0.3, y: y + 35) // Move label above the control
         label.horizontalAlignmentMode = .left
         addChild(label)
         
