@@ -99,6 +99,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // First, create the main circular path
         let mainPath = SKShapeNode(circleOfRadius: radius)
         mainPath.strokeColor = UIColor(red: 0.95, green: 0.7, blue: 0.2, alpha: 0.4) // Bitcoin gold color
+        
+        // Add physics body to the center circle to make bubbles bounce off it
+        centerCircle = SKShapeNode(circleOfRadius: radius)
+        centerCircle.fillColor = .clear
+        centerCircle.strokeColor = .clear
+        centerCircle.position = center
+        centerCircle.zPosition = 10
+        
+        // Create a physics body for the center circle
+        centerCircle.physicsBody = SKPhysicsBody(circleOfRadius: radius)
+        centerCircle.physicsBody?.isDynamic = false // Static body
+        centerCircle.physicsBody?.categoryBitMask = ballCategory
+        centerCircle.physicsBody?.collisionBitMask = bubbleCategory
+        centerCircle.physicsBody?.contactTestBitMask = bubbleCategory
+        centerCircle.physicsBody?.restitution = 0.9 // High bounce
+        addChild(centerCircle)
         mainPath.lineWidth = 2
         mainPath.position = center
         mainPath.zPosition = -1
@@ -529,25 +545,67 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         cryptoBubbles.removeAll()
         
-
+        // Filter out Bitcoin (BTC) and create a shuffled array for more variety
+        let filteredCryptos = cryptos.filter { $0.symbol.lowercased() != "btc" }
         
-        // Create new bubbles (excluding Bitcoin)
-        for crypto in cryptos {
-            // Skip Bitcoin bubbles - only create bubbles for other cryptocurrencies
-            if crypto.symbol.lowercased() != "btc" {
-                createCryptoBubble(for: crypto)
+        // If we didn't get enough cryptocurrencies from the API, create some fallbacks
+        if filteredCryptos.count < 5 {
+            // Fill with fallbacks immediately rather than waiting
+            createFallbackBubbles(minCount: 5)
+            return
+        }
+        
+        // Shuffle the array to ensure we get variety each time
+        let shuffledCryptos = filteredCryptos.shuffled()
+        
+        // Create many more bubbles like cryptobubbles.net
+        var usedSymbols = Set<String>() // Track which symbols we've already used
+        
+        // First pass - use unique cryptocurrencies
+        for crypto in shuffledCryptos {
+            // Skip duplicates
+            if usedSymbols.contains(crypto.symbol.lowercased()) {
+                continue
+            }
+            
+            createCryptoBubble(for: crypto)
+            usedSymbols.insert(crypto.symbol.lowercased())
+            
+            // Create many more bubbles to fill the screen (like cryptobubbles.net)
+            if cryptoBubbles.count >= 50 { // Increased from 30 to 50
+                break
             }
         }
+        
+        // If we don't have enough bubbles, create fallback ones with different symbols
+        if cryptoBubbles.count < 40 {
+            createFallbackBubbles(minCount: 40, usedSymbols: usedSymbols)
+        }
+        
+        // Ensure bubbles are well distributed
+        distributeBubblesEvenly()
     }
     
     private func createCryptoBubble(for crypto: CryptoCurrency) {
         let size = crypto.bubbleSize
         let bubble = SKShapeNode(circleOfRadius: size/2)
-        bubble.fillColor = crypto.bubbleColor
-        bubble.strokeColor = .white
-        bubble.lineWidth = 1.5
         
-        // Add the cryptocurrency symbol
+        // Create distinctive colors based on the crypto symbol
+        let uniqueColor = getUniqueColorForSymbol(crypto.symbol)
+        bubble.fillColor = uniqueColor
+        
+        // Add glowing stroke based on price change direction
+        bubble.strokeColor = crypto.priceChangePercentage24h >= 0 ? .green : .red
+        bubble.lineWidth = 2.0
+        
+        // Add shimmer effect to make bubbles more visually appealing
+        let shimmerAction = SKAction.sequence([
+            SKAction.fadeAlpha(to: 0.7, duration: 1.0),
+            SKAction.fadeAlpha(to: 1.0, duration: 1.0)
+        ])
+        bubble.run(SKAction.repeatForever(shimmerAction))
+        
+        // Add the cryptocurrency symbol with improved styling
         let symbolLabel = SKLabelNode(text: crypto.symbol)
         symbolLabel.fontName = "AvenirNext-Bold"
         symbolLabel.fontSize = min(size/3, 16)
@@ -573,27 +631,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let yPos = CGFloat.random(in: safeAreaBottom..<safeAreaTop)
         bubble.position = CGPoint(x: xPos, y: yPos)
         
-        // Add physics body for interactions
+        // Add enhanced physics body for more dynamic interactions
         bubble.physicsBody = SKPhysicsBody(circleOfRadius: size/2)
         bubble.physicsBody?.isDynamic = true
+        bubble.physicsBody?.mass = size / 40  // Larger bubbles are heavier
         bubble.physicsBody?.categoryBitMask = bubbleCategory
         bubble.physicsBody?.contactTestBitMask = bubbleCategory  // Make bubbles interact with each other
         bubble.physicsBody?.collisionBitMask = bubbleCategory | ballCategory  // Allow collision with other bubbles and the ball
-        bubble.physicsBody?.restitution = 0.7 // Bounciness
-        bubble.physicsBody?.linearDamping = 0.8 // Air resistance
+        bubble.physicsBody?.restitution = 0.9 // Increased bounciness
+        bubble.physicsBody?.linearDamping = 0.5 // Reduced air resistance for more movement
+        bubble.physicsBody?.angularDamping = 0.5 // Allow spinning
+        bubble.physicsBody?.allowsRotation = true // Enable rotation
         
-        // Add gentle movement
-        let randomDuration = TimeInterval.random(in: 8...15)
+        // Add gentle continuous movement 
         let randomDirection = CGVector(
-            dx: CGFloat.random(in: -30...30),
-            dy: CGFloat.random(in: -10...10)
+            dx: CGFloat.random(in: -50...50),
+            dy: CGFloat.random(in: -30...30)
         )
         
-        let moveAction = SKAction.move(by: randomDirection, duration: randomDuration)
-        let moveReverse = SKAction.move(by: CGVector(dx: -randomDirection.dx, dy: -randomDirection.dy), duration: randomDuration)
-        let sequence = SKAction.sequence([moveAction, moveReverse])
-        let moveForever = SKAction.repeatForever(sequence)
-        bubble.run(moveForever)
+        // Apply a small ongoing force for gentle continuous movement
+        bubble.physicsBody?.applyForce(CGVector(dx: randomDirection.dx/10, dy: randomDirection.dy/10))
+        
+        // Name the bubble with the crypto symbol for identification
+        bubble.name = "bubble_" + crypto.symbol
         
         // Store the crypto data for later use
         bubble.userData = NSMutableDictionary()
@@ -608,8 +668,44 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // MARK: - Physics Contact
     
     func didBegin(_ contact: SKPhysicsContact) {
-        // Handle physics interactions if needed
-        // For now, we're just using physics for realistic movement
+        let bodyA = contact.bodyA
+        let bodyB = contact.bodyB
+        
+        // Check if a bubble has collided with the center circle
+        if (bodyA.categoryBitMask == bubbleCategory && bodyB.categoryBitMask == ballCategory) ||
+           (bodyA.categoryBitMask == ballCategory && bodyB.categoryBitMask == bubbleCategory) {
+            
+            // Get the bubble node - it's either bodyA or bodyB
+            let bubbleNode = (bodyA.categoryBitMask == bubbleCategory) ? bodyA.node : bodyB.node
+            
+            // Get the bubble position for the explosion effect
+            guard let bubblePosition = bubbleNode?.position else { return }
+            
+            // Create a bright explosion effect at collision point
+            createExplosion(at: bubblePosition, with: (bubbleNode as? SKShapeNode)?.fillColor ?? .white)
+            
+            // Play a subtle sound for the bubble explosion
+            SoundManager.shared.playSound(.successTap)
+            
+            // Keep track of the bubble to be removed
+            if let bubble = bubbleNode as? SKShapeNode {
+                // Wait a tiny bit before removing so explosion can be seen
+                bubble.run(SKAction.sequence([
+                    SKAction.wait(forDuration: 0.05),
+                    SKAction.removeFromParent()
+                ]))
+                
+                // Remove from our tracking array
+                if let index = cryptoBubbles.firstIndex(of: bubble) {
+                    cryptoBubbles.remove(at: index)
+                    
+                    // Add a replacement bubble after a short delay
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                        self?.addReplacementBubble()
+                    }
+                }
+            }
+        }
     }
     
     // Keep bubbles in bounds
@@ -1101,16 +1197,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             cryptoBubbles.remove(at: index)
         }
         
-        // Check if all bubbles are gone, and if so, fetch new data immediately
-        if cryptoBubbles.isEmpty {
-            fetchCryptoData()
-            
-            // If we've had issues with API, create some fallback bubbles after a short delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                guard let self = self, self.cryptoBubbles.isEmpty else { return }
+        // Replace the popped bubble with a new one immediately
+        let minBubbleCount = 10  // Maintain at least this many bubbles
+        
+        if cryptoBubbles.count < minBubbleCount {
+            // If we still have some bubbles, add a replacement with animation
+            if !cryptoBubbles.isEmpty {
+                addReplacementBubble()
+            } else {
+                // If all bubbles are gone, fetch new data immediately
+                fetchCryptoData()
                 
-                // Create fallback bubbles if API failed
-                self.createFallbackBubbles()
+                // If API fails, create fallback bubbles after a short delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                    guard let self = self, self.cryptoBubbles.isEmpty else { return }
+                    self.createFallbackBubbles(minCount: minBubbleCount)
+                }
             }
         }
         
@@ -1122,50 +1224,355 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         generator.impactOccurred()
     }
     
-    // Create fallback bubbles when API fetch fails
-    private func createFallbackBubbles() {
-        // Only create fallbacks if we don't have any bubbles
-        guard cryptoBubbles.isEmpty else { return }
+    // Create a colorful explosion effect when bubbles hit the center circle
+    private func createExplosion(at position: CGPoint, with color: UIColor) {
+        // Create an explosion with particles in the bubble's color
+        let particleCount = Int.random(in: 12...20)
+        let burstRadius = CGFloat.random(in: 30...50)
         
-        // Create some dummy alt coins
-        let altCoins = [
-            (symbol: "ETH", name: "Ethereum", color: UIColor.green),
-            (symbol: "SOL", name: "Solana", color: UIColor.purple),
-            (symbol: "ADA", name: "Cardano", color: UIColor.blue),
-            (symbol: "XRP", name: "Ripple", color: UIColor.cyan),
-            (symbol: "DOT", name: "Polkadot", color: UIColor.magenta)
-        ]
-        
-        // Create bubbles for each alt coin
-        for (_, coin) in altCoins.enumerated() {
-            // Create bubble at random position
-            let bubble = SKShapeNode(circleOfRadius: CGFloat.random(in: 25...40))
-            bubble.fillColor = coin.color
-            bubble.strokeColor = .white
-            bubble.lineWidth = 1.5
+        for _ in 0..<particleCount {
+            // Create a particle
+            let particleSize = CGFloat.random(in: 3...8)
+            let particle = SKShapeNode(circleOfRadius: particleSize)
+            particle.fillColor = color
+            particle.strokeColor = UIColor.white
+            particle.lineWidth = 0.5
+            particle.position = position
+            particle.zPosition = 2
+            addChild(particle)
             
-            // Position randomly but ensure it's within the screen bounds
-            let padding: CGFloat = 50
-            let xPos = CGFloat.random(in: padding...(size.width - padding))
-            let yPos = CGFloat.random(in: padding...(size.height - padding))
+            // Randomize the particle trajectory
+            let angle = CGFloat.random(in: 0...(CGFloat.pi * 2))
+            let distance = CGFloat.random(in: burstRadius/2...burstRadius)
+            let dx = cos(angle) * distance
+            let dy = sin(angle) * distance
+            
+            // Create the particle animation
+            let move = SKAction.moveBy(x: dx, y: dy, duration: Double(CGFloat.random(in: 0.3...0.6)))
+            let fade = SKAction.fadeOut(withDuration: Double(CGFloat.random(in: 0.3...0.5)))
+            let scale = SKAction.scale(to: CGFloat.random(in: 0.1...0.3), duration: Double(CGFloat.random(in: 0.3...0.5)))
+            let group = SKAction.group([move, fade, scale])
+            
+            // Remove the particle when animation completes
+            let sequence = SKAction.sequence([group, SKAction.removeFromParent()])
+            particle.run(sequence)
+        }
+    }
+    
+    // Helper method to create unique crypto list
+    private func createUniqueCryptoList(excluding usedSymbols: Set<String>) -> [CryptoCurrency] {
+        return [
+            CryptoCurrency(symbol: "ETH", name: "Ethereum", price: 3500.00, priceChangePercentage24h: 2.5, marketCap: 420_000_000_000),
+            CryptoCurrency(symbol: "SOL", name: "Solana", price: 120.00, priceChangePercentage24h: 5.0, marketCap: 51_000_000_000),
+            CryptoCurrency(symbol: "ADA", name: "Cardano", price: 0.45, priceChangePercentage24h: -1.2, marketCap: 16_000_000_000),
+            CryptoCurrency(symbol: "XRP", name: "Ripple", price: 0.60, priceChangePercentage24h: 0.8, marketCap: 33_000_000_000),
+            CryptoCurrency(symbol: "DOT", name: "Polkadot", price: 6.50, priceChangePercentage24h: -0.5, marketCap: 8_500_000_000),
+            CryptoCurrency(symbol: "DOGE", name: "Dogecoin", price: 0.08, priceChangePercentage24h: -3.0, marketCap: 11_000_000_000),
+            CryptoCurrency(symbol: "AVAX", name: "Avalanche", price: 35.00, priceChangePercentage24h: 4.2, marketCap: 13_000_000_000),
+            CryptoCurrency(symbol: "MATIC", name: "Polygon", price: 0.70, priceChangePercentage24h: 1.5, marketCap: 7_000_000_000),
+            CryptoCurrency(symbol: "LINK", name: "Chainlink", price: 14.20, priceChangePercentage24h: 3.1, marketCap: 8_000_000_000),
+            CryptoCurrency(symbol: "UNI", name: "Uniswap", price: 8.90, priceChangePercentage24h: 1.7, marketCap: 5_000_000_000),
+            CryptoCurrency(symbol: "ATOM", name: "Cosmos", price: 9.40, priceChangePercentage24h: 2.3, marketCap: 3_500_000_000),
+            CryptoCurrency(symbol: "ALGO", name: "Algorand", price: 0.19, priceChangePercentage24h: 0.5, marketCap: 1_500_000_000),
+            CryptoCurrency(symbol: "FIL", name: "Filecoin", price: 5.30, priceChangePercentage24h: 4.8, marketCap: 2_500_000_000),
+            CryptoCurrency(symbol: "NEAR", name: "NEAR Protocol", price: 6.10, priceChangePercentage24h: 3.2, marketCap: 6_000_000_000),
+            CryptoCurrency(symbol: "ICP", name: "Internet Computer", price: 12.50, priceChangePercentage24h: -1.8, marketCap: 6_500_000_000),
+            CryptoCurrency(symbol: "VET", name: "VeChain", price: 0.03, priceChangePercentage24h: 1.1, marketCap: 2_100_000_000),
+            CryptoCurrency(symbol: "HBAR", name: "Hedera", price: 0.08, priceChangePercentage24h: 0.9, marketCap: 2_700_000_000),
+            CryptoCurrency(symbol: "ONE", name: "Harmony", price: 0.02, priceChangePercentage24h: -0.8, marketCap: 250_000_000),
+            CryptoCurrency(symbol: "THETA", name: "Theta Network", price: 0.95, priceChangePercentage24h: 2.7, marketCap: 950_000_000),
+            CryptoCurrency(symbol: "ZIL", name: "Zilliqa", price: 0.03, priceChangePercentage24h: 3.5, marketCap: 450_000_000),
+            CryptoCurrency(symbol: "XTZ", name: "Tezos", price: 0.85, priceChangePercentage24h: 1.3, marketCap: 800_000_000),
+            CryptoCurrency(symbol: "EOS", name: "EOS", price: 0.70, priceChangePercentage24h: -0.2, marketCap: 800_000_000),
+            CryptoCurrency(symbol: "XLM", name: "Stellar", price: 0.11, priceChangePercentage24h: 0.4, marketCap: 3_100_000_000),
+            CryptoCurrency(symbol: "TRX", name: "TRON", price: 0.12, priceChangePercentage24h: 1.6, marketCap: 12_000_000_000),
+            CryptoCurrency(symbol: "CHZ", name: "Chiliz", price: 0.11, priceChangePercentage24h: 5.2, marketCap: 850_000_000),
+            CryptoCurrency(symbol: "LTC", name: "Litecoin", price: 82.50, priceChangePercentage24h: 1.1, marketCap: 6_100_000_000),
+            CryptoCurrency(symbol: "CAKE", name: "PancakeSwap", price: 2.40, priceChangePercentage24h: 3.7, marketCap: 520_000_000),
+            CryptoCurrency(symbol: "EGLD", name: "MultiversX", price: 43.20, priceChangePercentage24h: 4.9, marketCap: 1_100_000_000),
+            CryptoCurrency(symbol: "FLOW", name: "Flow", price: 0.75, priceChangePercentage24h: 2.1, marketCap: 850_000_000),
+            CryptoCurrency(symbol: "QNT", name: "Quant", price: 105.00, priceChangePercentage24h: 0.6, marketCap: 1_350_000_000),
+            CryptoCurrency(symbol: "APE", name: "ApeCoin", price: 1.40, priceChangePercentage24h: -1.3, marketCap: 600_000_000),
+            CryptoCurrency(symbol: "KSM", name: "Kusama", price: 30.20, priceChangePercentage24h: 3.8, marketCap: 280_000_000),
+            CryptoCurrency(symbol: "ENJ", name: "Enjin Coin", price: 0.32, priceChangePercentage24h: 1.9, marketCap: 350_000_000),
+            CryptoCurrency(symbol: "YFI", name: "Yearn Finance", price: 7900.00, priceChangePercentage24h: 2.3, marketCap: 265_000_000),
+            CryptoCurrency(symbol: "BAT", name: "Basic Attention", price: 0.25, priceChangePercentage24h: 1.2, marketCap: 375_000_000)
+        ]
+    }
+    
+    // Add a new bubble to replace one that was popped
+    private func addReplacementBubble() {
+        // Get all existing bubble symbols to avoid duplicates
+        var existingSymbols = Set<String>()
+        for bubble in cryptoBubbles {
+            if let symbol = bubble.name?.replacingOccurrences(of: "bubble_", with: "") {
+                existingSymbols.insert(symbol.lowercased())
+            }
+        }
+        
+        // Create our own cryptocurrencies with unique symbols
+        let altCoins = createUniqueCryptoList(excluding: existingSymbols)
+        
+        // Filter coins to only those not already in use
+        let availableCoins = altCoins.filter { !existingSymbols.contains($0.symbol.lowercased()) }
+        
+        // Pick a random available coin, or any coin if we run out of unique ones
+        let randomCoin = availableCoins.isEmpty ? altCoins.randomElement()! : availableCoins.randomElement()!
+        
+        // Get color from our unique color generator
+        let coinColor = getUniqueColorForSymbol(randomCoin.symbol)
+        
+        // Use the coin's bubble size based on market cap (or random size for variety)
+        let size = randomCoin.bubbleSize * CGFloat.random(in: 0.8...1.2) // Add some randomness
+        let bubble = SKShapeNode(circleOfRadius: size/2)
+        bubble.fillColor = coinColor
+        bubble.strokeColor = randomCoin.priceChangePercentage24h >= 0 ? UIColor.green : UIColor.red
+        bubble.lineWidth = 2.0
+        bubble.name = "bubble_" + randomCoin.symbol
+        
+        // Add symbol label
+        let symbolLabel = SKLabelNode(text: randomCoin.symbol)
+        symbolLabel.fontName = "AvenirNext-Bold"
+        symbolLabel.fontSize = min(size/3, 16)
+        symbolLabel.fontColor = UIColor.white
+        symbolLabel.position = CGPoint(x: 0, y: 0)
+        symbolLabel.verticalAlignmentMode = SKLabelVerticalAlignmentMode.center
+        bubble.addChild(symbolLabel)
+        
+        // Add shimmer effect
+        let shimmerAction = SKAction.sequence([
+            SKAction.fadeAlpha(to: 0.7, duration: 1.0),
+            SKAction.fadeAlpha(to: 1.0, duration: 1.0)
+        ])
+        bubble.run(SKAction.repeatForever(shimmerAction))
+        
+        // Position at the edge of the screen with a bit of randomness
+        let entryPoint = Int.random(in: 0...3) // 0: top, 1: right, 2: bottom, 3: left
+        var xPos: CGFloat = 0
+        var yPos: CGFloat = 0
+        
+        // Get scene dimensions
+        let sceneWidth = self.size.width
+        let sceneHeight = self.size.height
+        
+        // Get center circle position and dimensions for checking
+        let centerX = sceneWidth / 2
+        let centerY = sceneHeight / 2
+        let circleRadius = radius + 20 // Same padding as in distributeBubblesEvenly
+        
+        switch entryPoint {
+        case 0: // Top
+            xPos = CGFloat.random(in: size...sceneWidth-size)
+            yPos = sceneHeight + size
+        case 1: // Right
+            xPos = sceneWidth + size
+            yPos = CGFloat.random(in: size...sceneHeight-size)
+        case 2: // Bottom
+            xPos = CGFloat.random(in: size...sceneWidth-size)
+            yPos = -size
+        default: // Left
+            xPos = -size
+            yPos = CGFloat.random(in: size...sceneHeight-size)
+        }
+        
+        // Calculate entry angle to avoid direct path through center circle
+        let dx = centerX - xPos
+        let dy = centerY - yPos
+        let angleToCenter = atan2(dy, dx)
+        
+        // Adjust entry angle by a random offset to avoid center
+        let offsetAngle = CGFloat.random(in: -0.6...0.6) // About ±30 degrees
+        
+        bubble.position = CGPoint(x: xPos, y: yPos)
+        
+        // Add physics body
+        bubble.physicsBody = SKPhysicsBody(circleOfRadius: size/2)
+        bubble.physicsBody?.isDynamic = true
+        bubble.physicsBody?.mass = CGFloat(Double(size) / 40.0)
+        bubble.physicsBody?.categoryBitMask = bubbleCategory
+        bubble.physicsBody?.contactTestBitMask = bubbleCategory
+        bubble.physicsBody?.collisionBitMask = bubbleCategory | ballCategory
+        bubble.physicsBody?.restitution = 0.9
+        bubble.physicsBody?.linearDamping = 0.5
+        bubble.physicsBody?.angularDamping = 0.5
+        bubble.physicsBody?.allowsRotation = true
+        
+        addChild(bubble)
+        cryptoBubbles.append(bubble)
+        
+        // Apply impulse toward playfield but avoiding center circle
+        
+        // Use the offset angle to calculate a new target point that avoids the center
+        let adjustedAngle = Double(angleToCenter + offsetAngle)
+        
+        // Calculate a target point that's on the opposite side of the screen but avoiding center
+        let targetX = centerX + CGFloat(cos(adjustedAngle)) * circleRadius * 1.5 // Target outside the circle
+        let targetY = centerY + CGFloat(sin(adjustedAngle)) * circleRadius * 1.5
+        
+        // Direction vector to the adjusted target
+        let targetDx = targetX - bubble.position.x
+        let targetDy = targetY - bubble.position.y
+        
+        // Calculate distance for impulse strength
+        let targetDistance = CGFloat(sqrt(Double(targetDx*targetDx + targetDy*targetDy)))
+        let normalizedDirection = CGVector(
+            dx: targetDx / targetDistance * CGFloat.random(in: 70...140),
+            dy: targetDy / targetDistance * CGFloat.random(in: 70...140)
+        )
+        
+        bubble.physicsBody?.applyImpulse(normalizedDirection)
+    }
+    
+    // Helper method to generate a unique color based on cryptocurrency symbol
+    private func getUniqueColorForSymbol(_ symbol: String) -> UIColor {
+        // Convert symbol to lowercase to ensure consistent coloring
+        let symbolLower = symbol.lowercased()
+        
+        // Use the symbol's letters to create a unique but consistent color
+        var hue: CGFloat = 0
+        let saturation: CGFloat = 0.85  // High saturation for vibrant colors
+        var brightness: CGFloat = 0.9   // Good brightness for visibility
+        
+        // Calculate hue based on the ASCII values of the symbol's letters
+        if let firstChar = symbolLower.unicodeScalars.first?.value {
+            // Use the first character to get the primary hue (0-1 range)
+            hue = CGFloat(firstChar % 26) / 26.0
+            
+            // Adjust hue slightly based on the entire string to ensure uniqueness
+            if symbolLower.count > 1 {
+                let secondCharValue = symbolLower.unicodeScalars[symbolLower.index(symbolLower.startIndex, offsetBy: 1)].value
+                hue = (hue + CGFloat(secondCharValue % 10) / 100.0).truncatingRemainder(dividingBy: 1.0)
+            }
+            
+            // Adjust brightness slightly based on string length
+            brightness = min(0.95, 0.8 + CGFloat(symbolLower.count) / 50.0)
+        }
+        
+        // Create color from HSB values
+        return UIColor(hue: hue, saturation: saturation, brightness: brightness, alpha: 1.0)
+    }
+    
+    // Distribute bubbles around the screen like cryptobubbles.net - avoiding center circle
+    private func distributeBubblesEvenly() {
+        guard cryptoBubbles.count > 1 else { return }
+        
+        // Get center circle position and dimensions
+        let centerX = size.width / 2
+        let centerY = size.height / 2
+        let circleRadius = radius + 20 // Add padding to ensure bubbles start outside circle
+        
+        // Configure physics world for better bubble interactions
+        physicsWorld.gravity = CGVector(dx: 0, dy: -0.05) // Very slight gravity
+        
+        // Place bubbles with full screen coverage but avoiding center circle
+        for bubble in cryptoBubbles {
+            var validPosition = false
+            var xPos: CGFloat = 0
+            var yPos: CGFloat = 0
+            
+            // Keep trying positions until we find one outside the center circle
+            while !validPosition {
+                // Generate a random position across entire screen with padding
+                xPos = CGFloat.random(in: 40...size.width-40)
+                yPos = CGFloat.random(in: 40...size.height-40)
+                
+                // Calculate distance from center
+                let dx = xPos - centerX
+                let dy = yPos - centerY
+                let distanceFromCenter = sqrt(dx*dx + dy*dy)
+                
+                // Position is valid if it's outside the center circle
+                if distanceFromCenter > circleRadius {
+                    validPosition = true
+                }
+            }
+            
             bubble.position = CGPoint(x: xPos, y: yPos)
             
-            // Add symbol label
-            let symbolLabel = SKLabelNode(text: coin.symbol)
-            symbolLabel.fontName = "AvenirNext-Bold"
-            symbolLabel.fontSize = 16
-            symbolLabel.fontColor = .white
-            symbolLabel.position = CGPoint(x: 0, y: 0)
-            symbolLabel.verticalAlignmentMode = .center
-            bubble.addChild(symbolLabel)
+            // Apply initial random impulse for more dynamic movement
+            // Calculate direction - slightly biased away from center for initial dispersion
+            let dx = bubble.position.x - centerX
+            let dy = bubble.position.y - centerY
+            let magnitude = sqrt(dx*dx + dy*dy)
             
-            // Store the bubble
-            addChild(bubble)
-            cryptoBubbles.append(bubble)
+            // Normalized direction vector with random magnitude
+            let directionX = dx / magnitude
+            let directionY = dy / magnitude
+            
+            let randomImpulse = CGVector(
+                dx: directionX * CGFloat.random(in: 5...15) + CGFloat.random(in: -15...15),
+                dy: directionY * CGFloat.random(in: 5...15) + CGFloat.random(in: -15...15)
+            )
+            
+            bubble.physicsBody?.applyImpulse(randomImpulse)
         }
     }
     
     // Show Michael Saylor quote at bottom of screen
+    // Create fallback bubbles with unique symbols when needed
+    private func createFallbackBubbles(minCount: Int = 5, usedSymbols: Set<String> = []) {
+        // Extended fallback crypto data with many options
+        let fallbackCryptos = [
+            CryptoCurrency(symbol: "ETH", name: "Ethereum", price: 3500.00, priceChangePercentage24h: 2.5, marketCap: 420_000_000_000),
+            CryptoCurrency(symbol: "SOL", name: "Solana", price: 120.00, priceChangePercentage24h: 5.0, marketCap: 51_000_000_000),
+            CryptoCurrency(symbol: "ADA", name: "Cardano", price: 0.45, priceChangePercentage24h: -1.2, marketCap: 16_000_000_000),
+            CryptoCurrency(symbol: "XRP", name: "Ripple", price: 0.60, priceChangePercentage24h: 0.8, marketCap: 33_000_000_000),
+            CryptoCurrency(symbol: "DOT", name: "Polkadot", price: 6.50, priceChangePercentage24h: -0.5, marketCap: 8_500_000_000),
+            CryptoCurrency(symbol: "DOGE", name: "Dogecoin", price: 0.08, priceChangePercentage24h: -3.0, marketCap: 11_000_000_000),
+            CryptoCurrency(symbol: "AVAX", name: "Avalanche", price: 35.00, priceChangePercentage24h: 4.2, marketCap: 13_000_000_000),
+            CryptoCurrency(symbol: "MATIC", name: "Polygon", price: 0.70, priceChangePercentage24h: 1.5, marketCap: 7_000_000_000),
+            CryptoCurrency(symbol: "LINK", name: "Chainlink", price: 14.20, priceChangePercentage24h: 3.1, marketCap: 8_000_000_000),
+            CryptoCurrency(symbol: "UNI", name: "Uniswap", price: 8.90, priceChangePercentage24h: 1.7, marketCap: 5_000_000_000),
+            CryptoCurrency(symbol: "ATOM", name: "Cosmos", price: 9.40, priceChangePercentage24h: 2.3, marketCap: 3_500_000_000),
+            CryptoCurrency(symbol: "ALGO", name: "Algorand", price: 0.19, priceChangePercentage24h: 0.5, marketCap: 1_500_000_000),
+            CryptoCurrency(symbol: "FIL", name: "Filecoin", price: 5.30, priceChangePercentage24h: 4.8, marketCap: 2_500_000_000),
+            CryptoCurrency(symbol: "NEAR", name: "NEAR Protocol", price: 6.10, priceChangePercentage24h: 3.2, marketCap: 6_000_000_000),
+            CryptoCurrency(symbol: "ICP", name: "Internet Computer", price: 12.50, priceChangePercentage24h: -1.8, marketCap: 6_500_000_000),
+            CryptoCurrency(symbol: "VET", name: "VeChain", price: 0.03, priceChangePercentage24h: 1.1, marketCap: 2_100_000_000),
+            CryptoCurrency(symbol: "HBAR", name: "Hedera", price: 0.08, priceChangePercentage24h: 0.9, marketCap: 2_700_000_000),
+            CryptoCurrency(symbol: "ONE", name: "Harmony", price: 0.02, priceChangePercentage24h: -0.8, marketCap: 250_000_000),
+            CryptoCurrency(symbol: "THETA", name: "Theta Network", price: 0.95, priceChangePercentage24h: 2.7, marketCap: 950_000_000),
+            CryptoCurrency(symbol: "ZIL", name: "Zilliqa", price: 0.03, priceChangePercentage24h: 3.5, marketCap: 450_000_000),
+            CryptoCurrency(symbol: "XTZ", name: "Tezos", price: 0.85, priceChangePercentage24h: 1.3, marketCap: 800_000_000),
+            CryptoCurrency(symbol: "EOS", name: "EOS", price: 0.70, priceChangePercentage24h: -0.2, marketCap: 800_000_000),
+            CryptoCurrency(symbol: "XLM", name: "Stellar", price: 0.11, priceChangePercentage24h: 0.4, marketCap: 3_100_000_000),
+            CryptoCurrency(symbol: "TRX", name: "TRON", price: 0.12, priceChangePercentage24h: 1.6, marketCap: 12_000_000_000),
+            CryptoCurrency(symbol: "CHZ", name: "Chiliz", price: 0.11, priceChangePercentage24h: 5.2, marketCap: 850_000_000),
+            CryptoCurrency(symbol: "LTC", name: "Litecoin", price: 82.50, priceChangePercentage24h: 1.1, marketCap: 6_100_000_000),
+            CryptoCurrency(symbol: "CAKE", name: "PancakeSwap", price: 2.40, priceChangePercentage24h: 3.7, marketCap: 520_000_000),
+            CryptoCurrency(symbol: "EGLD", name: "MultiversX", price: 43.20, priceChangePercentage24h: 4.9, marketCap: 1_100_000_000),
+            CryptoCurrency(symbol: "FLOW", name: "Flow", price: 0.75, priceChangePercentage24h: 2.1, marketCap: 850_000_000),
+            CryptoCurrency(symbol: "QNT", name: "Quant", price: 105.00, priceChangePercentage24h: 0.6, marketCap: 1_350_000_000),
+            CryptoCurrency(symbol: "APE", name: "ApeCoin", price: 1.40, priceChangePercentage24h: -1.3, marketCap: 600_000_000),
+            CryptoCurrency(symbol: "KSM", name: "Kusama", price: 30.20, priceChangePercentage24h: 3.8, marketCap: 280_000_000),
+            CryptoCurrency(symbol: "ENJ", name: "Enjin Coin", price: 0.32, priceChangePercentage24h: 1.9, marketCap: 350_000_000),
+            CryptoCurrency(symbol: "YFI", name: "Yearn Finance", price: 7900.00, priceChangePercentage24h: 2.3, marketCap: 265_000_000),
+            CryptoCurrency(symbol: "BAT", name: "Basic Attention", price: 0.25, priceChangePercentage24h: 1.2, marketCap: 375_000_000)
+        ]
+        
+        // Convert usedSymbols to mutable copy
+        var trackUsedSymbols = usedSymbols
+        
+        // Create bubbles from fallback data, only using unique symbols
+        for crypto in fallbackCryptos.shuffled() {
+            // Skip symbols we've already used
+            if trackUsedSymbols.contains(crypto.symbol.lowercased()) {
+                continue
+            }
+            
+            createCryptoBubble(for: crypto)
+            trackUsedSymbols.insert(crypto.symbol.lowercased())
+            
+            // Check if we have enough bubbles
+            if cryptoBubbles.count >= minCount {
+                break
+            }
+        }
+        
+        // Distribute the bubbles evenly
+        distributeBubblesEvenly()
+    }
+    
     private func showSaylorQuote() {
         // Array of Michael Saylor Bitcoin quotes
         let saylorQuotes = [
