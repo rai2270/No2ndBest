@@ -1589,6 +1589,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     private func showSaylorQuote() {
+        // First, remove any existing quote labels to prevent overlapping
+        self.enumerateChildNodes(withName: "saylorQuoteLabel") { node, _ in
+            node.removeFromParent()
+        }
+        
         // Array of Michael Saylor Bitcoin quotes
         let saylorQuotes = [
             "There is no second best.",
@@ -1613,6 +1618,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         quoteLabel.fontColor = .orange
         quoteLabel.position = CGPoint(x: size.width/2, y: 50)
         quoteLabel.zPosition = 100
+        quoteLabel.name = "saylorQuoteLabel" // Add a name to identify quote labels
         addChild(quoteLabel)
         
         // Animate the quote
