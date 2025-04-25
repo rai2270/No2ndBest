@@ -156,12 +156,45 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         tapTarget.run(SKAction.repeatForever(pulseAction))
         addChild(tapTarget)
         
-        // Create ball
+        // Create Bitcoin-styled ball
         ball = SKShapeNode(circleOfRadius: ballRadius)
-        ball.fillColor = .green
-        ball.strokeColor = .white
-        ball.lineWidth = 1
+        
+        // We'll use a simple color instead of a gradient texture since the texture initializer is causing issues
+        let bitcoinColor = UIColor(red: 0.95, green: 0.7, blue: 0.2, alpha: 1.0) // Bitcoin gold color
+        
+        ball.fillColor = bitcoinColor
+        ball.strokeColor = .orange
+        ball.lineWidth = 1.5
         ball.position = tapPosition // Start at top
+        
+        // Add Bitcoin "₿" symbol to the ball
+        let bitcoinSymbol = SKLabelNode(text: "₿")
+        bitcoinSymbol.fontSize = ballRadius * 1.2
+        bitcoinSymbol.fontName = "AvenirNext-Bold"
+        bitcoinSymbol.verticalAlignmentMode = .center
+        bitcoinSymbol.horizontalAlignmentMode = .center
+        bitcoinSymbol.fontColor = .white
+        bitcoinSymbol.name = "bitcoinSymbol"
+        ball.addChild(bitcoinSymbol)
+        
+        // Add glow effect
+        let glowEffect = SKEffectNode()
+        glowEffect.shouldEnableEffects = true
+        glowEffect.filter = CIFilter(name: "CIGaussianBlur", parameters: ["inputRadius": 2.0])
+        
+        // Create the glow shape
+        let glowShape = SKShapeNode(circleOfRadius: ballRadius*0.9)
+        glowShape.fillColor = .orange
+        glowShape.alpha = 0.4
+        glowEffect.addChild(glowShape)
+        
+        glowEffect.alpha = 0.6
+        glowEffect.name = "glow"
+        ball.addChild(glowEffect)
+        
+        // Add subtle rotation animation
+        ball.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat.pi * 2, duration: 12.0)))
+        
         addChild(ball)
         
         // Add "TAP" text to tap target
@@ -1044,7 +1077,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ]
         
         // Create bubbles for each alt coin
-        for (i, coin) in altCoins.enumerated() {
+        for (_, coin) in altCoins.enumerated() {
             // Create bubble at random position
             let bubble = SKShapeNode(circleOfRadius: CGFloat.random(in: 25...40))
             bubble.fillColor = coin.color
