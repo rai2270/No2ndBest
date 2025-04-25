@@ -572,14 +572,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             usedSymbols.insert(crypto.symbol.lowercased())
             
             // Create many more bubbles to fill the screen (like cryptobubbles.net)
-            if cryptoBubbles.count >= 50 { // Increased from 30 to 50
+            if cryptoBubbles.count >= 25 { // Reduced by 50% from 50 to 25
                 break
             }
         }
         
         // If we don't have enough bubbles, create fallback ones with different symbols
-        if cryptoBubbles.count < 40 {
-            createFallbackBubbles(minCount: 40, usedSymbols: usedSymbols)
+        if cryptoBubbles.count < 20 {
+            createFallbackBubbles(minCount: 20, usedSymbols: usedSymbols)
         }
         
         // Ensure bubbles are well distributed
