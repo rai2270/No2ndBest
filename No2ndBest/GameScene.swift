@@ -1088,28 +1088,43 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Only proceed if there are bubbles to target
         guard !cryptoBubbles.isEmpty else { return }
         
-        // Find the largest bubble to target
-        var targetBubble: SKNode? = nil
-        var maxSize: CGFloat = 0
+        // Randomly select how many simultaneous lightning strikes (4-9)
+        let numberOfStrikes = Int.random(in: 4...9)
         
-        for bubble in cryptoBubbles {
-            guard let bubbleNode = bubble as? SKShapeNode else { continue }
-            
-            // Get the bubble size
-            let bubbleSize = bubbleNode.frame.width
-            
-            // If this is the largest bubble so far, make it the target
-            if bubbleSize > maxSize {
-                maxSize = bubbleSize
-                targetBubble = bubble
-            }
-        }
+        // Ensure we don't try to hit more bubbles than exist
+        let strikes = min(numberOfStrikes, cryptoBubbles.count)
         
-        // If we have a target, create lightning effect to it
-        if let target = targetBubble {
-            // Create the lightning bolt effect from center circle to target
-            createLightningBolt(from: centerCircle.position, to: target.position) { [weak self] in
-                self?.handleBubbleHit(bubble: target)
+        // Shuffle bubbles to get random targets
+        let shuffledBubbles = cryptoBubbles.shuffled()
+        
+        // Create lightning effects with staggered timing for visual appeal
+        for i in 0..<strikes {
+            let targetBubble = shuffledBubbles[i]
+            
+            // Introduce slight delay between lightning bolts for visual effect
+            let delay = Double(i) * 0.05 // 50ms delay between each bolt
+            
+            // Slightly randomize start positions around the center circle edge
+            let angle = Double.random(in: 0...(2 * Double.pi))
+            let offsetX = cos(angle) * Double(radius) * 0.8
+            let offsetY = sin(angle) * Double(radius) * 0.8
+            
+            let startPoint = CGPoint(
+                x: centerCircle.position.x + CGFloat(offsetX),
+                y: centerCircle.position.y + CGFloat(offsetY)
+            )
+            
+            // Delayed strike
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                guard let self = self else { return }
+                
+                // Create visual lightning effect
+                self.createLightningBolt(from: startPoint, to: targetBubble.position) { [weak self] in
+                    // Only handle bubble hit if it's still in the scene
+                    if targetBubble.parent != nil {
+                        self?.handleBubbleHit(bubble: targetBubble)
+                    }
+                }
             }
         }
     }
