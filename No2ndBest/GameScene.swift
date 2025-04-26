@@ -274,11 +274,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Add Bitcoin "₿" symbol to the ball
         let bitcoinSymbol = SKLabelNode(text: "₿")
-        bitcoinSymbol.fontSize = ballRadius * 1.2
+        bitcoinSymbol.fontSize = ballRadius * 2.0 // Increased from 1.2 to 2.0 for a much larger symbol
         bitcoinSymbol.fontName = "AvenirNext-Bold"
         bitcoinSymbol.verticalAlignmentMode = .center
         bitcoinSymbol.horizontalAlignmentMode = .center
-        bitcoinSymbol.fontColor = .white
+        bitcoinSymbol.fontColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0) // Bitcoin orange color
         bitcoinSymbol.name = "bitcoinSymbol"
         ball.addChild(bitcoinSymbol)
         
