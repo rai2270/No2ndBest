@@ -29,10 +29,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var highScore: Int = 0
     private var gameRunning = false
     private var lastTapTime: TimeInterval = 0
+    private var currentTime: TimeInterval = 0
+    private var lastShownQuote: String = ""  // Track last shown quote to avoid repetition
     private var gameSpeed: CGFloat = 1.0
     private var speedIncrease: CGFloat = 0.1
     private var hitAccuracy: CGFloat = 6.0  // Increased initial hit area
-    private var currentTime: TimeInterval = 0
     private var pathAngle: CGFloat = 0
     private var missedTaps: Int = 0
     private var maxMissedTaps: Int = 3  // Allow 3 missed taps before game over
@@ -303,6 +304,26 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         addChild(ball)
         
         // "TAP HERE!" text above is sufficient, no additional tap text needed
+        
+        // Add the 'No Second Best' motto at the top with better visibility
+        // Create a dark background rect for better visibility
+        let backgroundRect = SKShapeNode(rect: CGRect(x: 0, y: size.height - 90, width: size.width, height: 40), cornerRadius: 0)
+        backgroundRect.fillColor = UIColor.black.withAlphaComponent(0.6)
+        backgroundRect.strokeColor = .clear
+        backgroundRect.zPosition = 9
+        backgroundRect.name = "mottoBackground"
+        addChild(backgroundRect)
+        
+        // Add the motto text
+        let mottoLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        mottoLabel.text = "There is no second best."
+        mottoLabel.fontSize = 24
+        mottoLabel.fontColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0) // Bitcoin orange
+        mottoLabel.position = CGPoint(x: size.width/2, y: size.height - 70) // Better position
+        mottoLabel.horizontalAlignmentMode = .center
+        mottoLabel.name = "mottoLabel"
+        mottoLabel.zPosition = 10
+        addChild(mottoLabel)
     }
     
     private func startGame() {
@@ -342,20 +363,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
         // Display help message
-        let helpLabel = SKLabelNode(fontNamed: "AvenirNext-Medium")
-        helpLabel.fontSize = size.height * 0.03
-        helpLabel.position = CGPoint(x: size.width/2, y: size.height * 0.9)
-        helpLabel.text = "Tap when ball overlaps with TAP! (\(maxMissedTaps) misses allowed)"
-        helpLabel.fontColor = .white
-        helpLabel.name = "helpLabel"
-        addChild(helpLabel)
-        
-        // Fade out help message
-        helpLabel.run(SKAction.sequence([
-            SKAction.wait(forDuration: 3.0),
-            SKAction.fadeOut(withDuration: 1.0),
-            SKAction.removeFromParent()
-        ]))
+        // Visual "TAP HERE!" guidance is sufficient - no additional instructions needed
         
         // Start animation
         let scalePulse = SKAction.sequence([
@@ -1614,7 +1622,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Array of Michael Saylor Bitcoin quotes (shortened for better display)
         let saylorQuotes = [
-            "There is no second best.",
             "Bitcoin is digital gold.",
             "Bitcoin is hope.",
             "Bitcoin is inevitable.",
@@ -1622,8 +1629,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             "Bitcoin is economic security."
         ]
         
-        // Pick a random quote
-        let quote = saylorQuotes.randomElement() ?? "There is no second best."
+        // Pick a random quote, ensuring we don't repeat the last shown quote
+        var quote = ""
+        repeat {
+            quote = saylorQuotes.randomElement() ?? "Bitcoin is inevitable."
+        } while quote == lastShownQuote && saylorQuotes.count > 1
+        
+        // Update the last shown quote
+        lastShownQuote = quote
         
         // Create label for the quote
         let quoteLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
