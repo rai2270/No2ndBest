@@ -98,12 +98,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // First, create the main circular path
         let mainPath = SKShapeNode(circleOfRadius: radius)
-        mainPath.strokeColor = UIColor(red: 0.95, green: 0.7, blue: 0.2, alpha: 0.4) // Bitcoin gold color
+        mainPath.strokeColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 0.9) // Bitcoin orange, more vibrant
         
         // Add physics body to the center circle to make bubbles bounce off it
         centerCircle = SKShapeNode(circleOfRadius: radius)
-        centerCircle.fillColor = .clear
-        centerCircle.strokeColor = .clear
+        centerCircle.fillColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 0.1) // Bitcoin orange with transparency
+        centerCircle.strokeColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 0.4) // Bitcoin orange border
         centerCircle.position = center
         centerCircle.zPosition = 10
         
@@ -115,7 +115,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         centerCircle.physicsBody?.contactTestBitMask = bubbleCategory
         centerCircle.physicsBody?.restitution = 0.9 // High bounce
         addChild(centerCircle)
-        mainPath.lineWidth = 2
+        mainPath.lineWidth = 3 // Thicker, more visible line
         mainPath.position = center
         mainPath.zPosition = -1
         addChild(mainPath)
@@ -304,11 +304,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Add "TAP" text to tap target
         let tapText = SKLabelNode(fontNamed: "AvenirNext-Bold")
-        tapText.fontSize = ballRadius * 0.9
+        tapText.fontSize = ballRadius * 1.0 // Slightly larger
         tapText.position = tapPosition
-        tapText.text = "TAP"
-        tapText.fontColor = .white
+        tapText.text = "₿ TAP ₿" // Add Bitcoin symbols
+        tapText.fontColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0) // Bitcoin orange
         tapText.verticalAlignmentMode = .center
+        
+        // Add glow effect for the text
+        let textGlowEffect = SKEffectNode()
+        textGlowEffect.shouldEnableEffects = true
+        textGlowEffect.filter = CIFilter(name: "CIGaussianBlur", parameters: ["inputRadius": 1.0])
+        tapText.addChild(textGlowEffect)
         addChild(tapText)
     }
     
@@ -706,7 +712,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             // Get the bubble node - it's either bodyA or bodyB
             let bubbleNode = (bodyA.categoryBitMask == bubbleCategory) ? bodyA.node : bodyB.node
-            let centerNode = (bodyA.categoryBitMask == ballCategory) ? bodyA.node : bodyB.node
+            // We don't need to track the center node explicitly
+            _ = (bodyA.categoryBitMask == ballCategory) ? bodyA.node : bodyB.node
             
             // Instead of popping bubbles, let them bounce off the center circle
             // We'll just give them a slight pulse animation for visual feedback
