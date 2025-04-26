@@ -520,52 +520,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     @objc private func fetchCryptoData() {
-        // URL for CoinGecko API - free and doesn't require API key for basic usage
-        let urlString = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false&price_change_percentage=24h"
-        
-        guard let url = URL(string: urlString) else { return }
-        
-        let task = URLSession.shared.dataTask(with: url) { [weak self] (data, response, error) in
-            guard let self = self, let data = data, error == nil else {
-                print("Error fetching crypto data: \(error?.localizedDescription ?? "Unknown error")")
-                return
-            }
-            
-            do {
-                // Parse JSON response
-                if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
-                    var cryptos: [CryptoCurrency] = []
-                    
-                    for item in json {
-                        if let symbol = item["symbol"] as? String,
-                           let name = item["name"] as? String,
-                           let price = item["current_price"] as? Double,
-                           let priceChange = item["price_change_percentage_24h"] as? Double,
-                           let marketCap = item["market_cap"] as? Double {
-                            
-                            let crypto = CryptoCurrency(
-                                symbol: symbol.uppercased(),
-                                name: name,
-                                price: price,
-                                priceChangePercentage24h: priceChange,
-                                marketCap: marketCap
-                            )
-                            cryptos.append(crypto)
-                        }
-                    }
-                    
-                    // Update UI on main thread
-                    DispatchQueue.main.async { [weak self] in
-                        guard let self = self else { return }
-                        self.updateCryptoBubbles(with: cryptos)
-                    }
-                }
-            } catch {
-                print("Error parsing crypto data: \(error.localizedDescription)")
-            }
-        }
-        
-        task.resume()
+        // Create cryptocurrency bubbles using our hardcoded data
+        // This is more reliable than using an API and avoids rate limits
+        createFallbackBubbles(minCount: 25)
     }
     
     private func updateCryptoBubbles(with cryptos: [CryptoCurrency]) {
@@ -635,24 +592,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ])
         bubble.run(SKAction.repeatForever(shimmerAction))
         
-        // Add the cryptocurrency symbol with improved styling
+        // Add the cryptocurrency symbol with enhanced styling (no price display needed)
         let symbolLabel = SKLabelNode(text: crypto.symbol)
         symbolLabel.fontName = "AvenirNext-Bold"
-        symbolLabel.fontSize = min(size/3, 16)
+        symbolLabel.fontSize = min(size/2.5, 18) // Larger font size for better visibility
         symbolLabel.fontColor = .white
-        symbolLabel.position = CGPoint(x: 0, y: 5) // Moved up to make room for price
+        symbolLabel.position = CGPoint(x: 0, y: 0) // Centered in bubble
         symbolLabel.verticalAlignmentMode = .center
-        bubble.addChild(symbolLabel)
+        symbolLabel.horizontalAlignmentMode = .center
         
-        // Add price label (like in the original cryptobubbles)
-        let formattedPrice = String(format: "$%.2f", crypto.price)
-        let priceLabel = SKLabelNode(text: formattedPrice)
-        priceLabel.fontName = "AvenirNext"
-        priceLabel.fontSize = min(size/4, 12)
-        priceLabel.fontColor = .white
-        priceLabel.position = CGPoint(x: 0, y: -10) // Position below symbol
-        priceLabel.verticalAlignmentMode = .center
-        bubble.addChild(priceLabel)
+        // Add subtle glow effect to make symbols pop
+        symbolLabel.alpha = 0.95
+        bubble.addChild(symbolLabel)
         
         // Position the bubble in the upper area of the screen, above the game circle
         let safeAreaTop = self.size.height * 0.85
@@ -1265,39 +1216,84 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         generator.impactOccurred()
     }
     
-    // Create a colorful explosion effect when bubbles hit the center circle
-    private func createExplosion(at position: CGPoint, with color: UIColor) {
-        // Create an explosion with particles in the bubble's color
-        let particleCount = Int.random(in: 12...20)
-        let burstRadius = CGFloat.random(in: 30...50)
+    // MARK: - Visual Effects
+    
+    // Track recent explosions to throttle when too many happen at once
+    private var recentExplosions = 0
+    private var lastExplosionTime: TimeInterval = 0
+    
+    private func createExplosion(at position: CGPoint, color: UIColor) {
+        // Performance optimization: limit explosions when multiple happen in quick succession
+        let currentTime = CACurrentMediaTime()
+        
+        // Reset counter if enough time has passed
+        if currentTime - lastExplosionTime > 0.5 {
+            recentExplosions = 0
+        }
+        
+        // Update explosion tracking
+        recentExplosions += 1
+        lastExplosionTime = currentTime
+        
+        // When many explosions happen at once, use a simplified effect
+        let isHighLoad = recentExplosions > 2
+        
+        // Extremely simplified version under high load
+        if isHighLoad {
+            // Just show a single sprite that scales and fades out
+            let flash = SKShapeNode(circleOfRadius: 20)
+            flash.fillColor = color
+            flash.alpha = 0.7
+            flash.position = position
+            flash.zPosition = 2
+            addChild(flash)
+            
+            // Simple scale and fade
+            let scaleAction = SKAction.scale(to: 1.5, duration: 0.2)
+            let fadeAction = SKAction.fadeOut(withDuration: 0.2)
+            flash.run(SKAction.group([scaleAction, fadeAction])) { [weak flash] in
+                flash?.removeFromParent()
+            }
+            return
+        }
+        
+        // Regular load - use a more efficient but still visually appealing effect
+        // Use just 3-4 particles instead of 5-8
+        let particleCount = Int.random(in: 3...4)
+        let burstRadius = CGFloat.random(in: 20...30)
+        
+        // Create a particle container to batch operations
+        let container = SKNode()
+        container.position = position
+        container.zPosition = 2
+        addChild(container)
         
         for _ in 0..<particleCount {
-            // Create a particle
-            let particleSize = CGFloat.random(in: 3...8)
+            let particleSize = CGFloat.random(in: 3...5)
             let particle = SKShapeNode(circleOfRadius: particleSize)
             particle.fillColor = color
-            particle.strokeColor = UIColor.white
-            particle.lineWidth = 0.5
-            particle.position = position
-            particle.zPosition = 2
-            addChild(particle)
+            particle.strokeColor = .clear
             
-            // Randomize the particle trajectory
             let angle = CGFloat.random(in: 0...(CGFloat.pi * 2))
             let distance = CGFloat.random(in: burstRadius/2...burstRadius)
+            particle.position = .zero
+            container.addChild(particle)
+            
+            // Combine move and fade into a single group action
             let dx = cos(angle) * distance
             let dy = sin(angle) * distance
+            let moveAction = SKAction.moveBy(x: dx, y: dy, duration: 0.3)
+            let fadeAction = SKAction.fadeOut(withDuration: 0.3)
             
-            // Create the particle animation
-            let move = SKAction.moveBy(x: dx, y: dy, duration: Double(CGFloat.random(in: 0.3...0.6)))
-            let fade = SKAction.fadeOut(withDuration: Double(CGFloat.random(in: 0.3...0.5)))
-            let scale = SKAction.scale(to: CGFloat.random(in: 0.1...0.3), duration: Double(CGFloat.random(in: 0.3...0.5)))
-            let group = SKAction.group([move, fade, scale])
-            
-            // Remove the particle when animation completes
-            let sequence = SKAction.sequence([group, SKAction.removeFromParent()])
-            particle.run(sequence)
+            // Group actions for better performance
+            particle.run(SKAction.group([moveAction, fadeAction]))
         }
+        
+        // Remove container quickly
+        container.run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.3),
+            SKAction.removeFromParent()
+        ]))
     }
     
     // Helper method to create unique crypto list
