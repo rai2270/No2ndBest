@@ -1265,8 +1265,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         hashMeter.zPosition = 5
         addChild(hashMeter)
         
-        // Create small "chip" elements arranged in a grid pattern
+        // Create hash rate label with Bitcoin font styling - make it larger and more visible
         let bitcoinOrange = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0)
+        hashRateLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        hashRateLabel.fontSize = 16
+        hashRateLabel.fontColor = bitcoinOrange
+        hashRateLabel.position = CGPoint(x: -25, y: 0)
+        hashRateLabel.horizontalAlignmentMode = .center
+        hashRateLabel.verticalAlignmentMode = .center
+        hashRateLabel.text = String(format: "%.1f EH/s", currentHashRate)
+        hashMeter.addChild(hashRateLabel)
+        
+        // Create a container node for the chip grid - position closer to the hash rate text
+        let chipsContainer = SKNode()
+        chipsContainer.position = CGPoint(x: 30, y: 0) // Position closer to the hash rate text
+        hashMeter.addChild(chipsContainer)
+        
+        // Create small "chip" elements arranged in a grid pattern
         let chipSize: CGFloat = 4
         let chipSpacing: CGFloat = 2
         let rows = 3
@@ -1279,27 +1294,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 chip.strokeColor = UIColor.orange.withAlphaComponent(0.5)
                 chip.position = CGPoint(
                     x: CGFloat(col) * (chipSize + chipSpacing),
-                    y: CGFloat(row) * (chipSize + chipSpacing)
+                    y: CGFloat(row) * (chipSize + chipSpacing) - 4 // Slight vertical adjustment
                 )
-                hashMeter.addChild(chip)
+                chipsContainer.addChild(chip)
                 hashChips.append(chip)
             }
         }
         
-        // Create hash rate label with Bitcoin font styling - make it larger and more visible
-        hashRateLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
-        hashRateLabel.fontSize = 16
-        hashRateLabel.fontColor = bitcoinOrange
-        hashRateLabel.position = CGPoint(x: 0, y: -15)
-        hashRateLabel.horizontalAlignmentMode = .center
-        hashRateLabel.text = "1 TH/s"
-        hashMeter.addChild(hashRateLabel)
-        
-        // Add label explaining what this represents - make it clearer
+        // Add label explaining what this represents - make it clearer and positioned below hash rate
         let descriptionLabel = SKLabelNode(fontNamed: "AvenirNext")
         descriptionLabel.fontSize = 12
         descriptionLabel.fontColor = .white
-        descriptionLabel.position = CGPoint(x: 0, y: -32)
+        descriptionLabel.position = CGPoint(x: -25, y: -20) // Position directly below the hash rate
         descriptionLabel.horizontalAlignmentMode = .center
         descriptionLabel.text = "HASHRATE"
         hashMeter.addChild(descriptionLabel)
@@ -1310,11 +1316,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     private func updateHashRate() {
         // Calculate a new potential hash rate based on current score
-        // Use the base hash rate as a starting point
-        let scoreHashRate = baseHashRate * pow(1.15, Double(score) / 5)
+        // Use the base hash rate as a starting point with slower growth
+        let scoreHashRate = baseHashRate * pow(1.05, Double(score) / 10)
         
         // Always use whichever is higher - this ensures hash rate never decreases
-        currentHashRate = max(scoreHashRate, currentHashRate)
+        // Cap the maximum hash rate to prevent display issues
+        currentHashRate = min(5000.0, max(scoreHashRate, currentHashRate))
         
         // Format the hash rate with appropriate units - always in EH/s since we're using realistic Bitcoin values
         let formattedRate = String(format: "%.1f EH/s", currentHashRate)
