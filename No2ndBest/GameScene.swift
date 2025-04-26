@@ -520,57 +520,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     @objc private func fetchCryptoData() {
-        // BYPASS API: Force use of fallback bubbles since API might be down
+        // Create cryptocurrency bubbles using our hardcoded data
+        // This is more reliable than using an API and avoids rate limits
         createFallbackBubbles(minCount: 25)
-        return
-        
-        // Original API fetch code below (not executed due to early return above)
-        // URL for CoinGecko API - free and doesn't require API key for basic usage
-        let urlString = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false&price_change_percentage=24h"
-        
-        guard let url = URL(string: urlString) else { return }
-        
-        let task = URLSession.shared.dataTask(with: url) { [weak self] (data, response, error) in
-            guard let self = self, let data = data, error == nil else {
-                print("Error fetching crypto data: \(error?.localizedDescription ?? "Unknown error")")
-                return
-            }
-            
-            do {
-                // Parse JSON response
-                if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
-                    var cryptos: [CryptoCurrency] = []
-                    
-                    for item in json {
-                        if let symbol = item["symbol"] as? String,
-                           let name = item["name"] as? String,
-                           let price = item["current_price"] as? Double,
-                           let priceChange = item["price_change_percentage_24h"] as? Double,
-                           let marketCap = item["market_cap"] as? Double {
-                            
-                            let crypto = CryptoCurrency(
-                                symbol: symbol.uppercased(),
-                                name: name,
-                                price: price,
-                                priceChangePercentage24h: priceChange,
-                                marketCap: marketCap
-                            )
-                            cryptos.append(crypto)
-                        }
-                    }
-                    
-                    // Update UI on main thread
-                    DispatchQueue.main.async { [weak self] in
-                        guard let self = self else { return }
-                        self.updateCryptoBubbles(with: cryptos)
-                    }
-                }
-            } catch {
-                print("Error parsing crypto data: \(error.localizedDescription)")
-            }
-        }
-        
-        task.resume()
     }
     
     private func updateCryptoBubbles(with cryptos: [CryptoCurrency]) {
@@ -640,24 +592,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ])
         bubble.run(SKAction.repeatForever(shimmerAction))
         
-        // Add the cryptocurrency symbol with improved styling
+        // Add the cryptocurrency symbol with enhanced styling (no price display needed)
         let symbolLabel = SKLabelNode(text: crypto.symbol)
         symbolLabel.fontName = "AvenirNext-Bold"
-        symbolLabel.fontSize = min(size/3, 16)
+        symbolLabel.fontSize = min(size/2.5, 18) // Larger font size for better visibility
         symbolLabel.fontColor = .white
-        symbolLabel.position = CGPoint(x: 0, y: 5) // Moved up to make room for price
+        symbolLabel.position = CGPoint(x: 0, y: 0) // Centered in bubble
         symbolLabel.verticalAlignmentMode = .center
-        bubble.addChild(symbolLabel)
+        symbolLabel.horizontalAlignmentMode = .center
         
-        // Add price label (like in the original cryptobubbles)
-        let formattedPrice = String(format: "$%.2f", crypto.price)
-        let priceLabel = SKLabelNode(text: formattedPrice)
-        priceLabel.fontName = "AvenirNext"
-        priceLabel.fontSize = min(size/4, 12)
-        priceLabel.fontColor = .white
-        priceLabel.position = CGPoint(x: 0, y: -10) // Position below symbol
-        priceLabel.verticalAlignmentMode = .center
-        bubble.addChild(priceLabel)
+        // Add subtle glow effect to make symbols pop
+        symbolLabel.alpha = 0.95
+        bubble.addChild(symbolLabel)
         
         // Position the bubble in the upper area of the screen, above the game circle
         let safeAreaTop = self.size.height * 0.85
