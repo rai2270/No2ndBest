@@ -38,6 +38,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var missedTaps: Int = 0
     private var maxMissedTaps: Int = 3  // Allow 3 missed taps before game over
     
+    // Bitcoin hash power visualization
+    private var hashMeter: SKNode!
+    private var hashChips = [SKShapeNode]()
+    private var hashRateLabel: SKLabelNode!
+    private var currentHashRate: Double = 500.0 // Default starting rate in EH/s
+    private var baseHashRate: Double = 500.0 // Base rate that grows over time in EH/s
+    
     // Physics categories for crypto bubbles
     private let bubbleCategory: UInt32 = 0x1 << 0
     private let ballCategory: UInt32 = 0x1 << 1
@@ -49,6 +56,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setupGame()
         setupPauseButton()
         setupCryptoBubbles()
+        setupHashMeter()
         
         // Set up physics contact delegate
         physicsWorld.contactDelegate = self
@@ -387,6 +395,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Select a new random music track for the next game
         SoundManager.shared.selectNewTrack()
+        
+        // Save the highest hash rate achieved
+        let existingHighest = UserDefaults.standard.double(forKey: "highestHashRate")
+        if currentHashRate > existingHighest {
+            UserDefaults.standard.set(currentHashRate, forKey: "highestHashRate")
+        }
         
         // Mark that the user has played before - this will enable slower ball speed on next play
         UserDefaults.standard.set(true, forKey: "hasPlayedBefore")
@@ -976,6 +990,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Update the score display
             scoreLabel.text = "\(score)"
             
+            // Update Bitcoin network hash rate visualization
+            updateHashRate()
+            
             // Reset missed taps counter on success
             missedTaps = 0
             
@@ -1224,6 +1241,105 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Provide haptic feedback
         let generator = UIImpactFeedbackGenerator(style: .heavy)
         generator.impactOccurred()
+    }
+    
+    // MARK: - Bitcoin Hash Power Visualization
+    
+    private func setupHashMeter() {
+        // Load the persistent hash rate from UserDefaults
+        baseHashRate = UserDefaults.standard.double(forKey: "highestHashRate")
+        if baseHashRate < 500.0 {
+            // If no previous hash rate stored, start at 500 EH/s (2023-2024 levels)
+            baseHashRate = 500.0
+        }
+        
+        // Set current hash rate to at least the base rate
+        currentHashRate = baseHashRate
+        
+        // Bitcoin hash power visualization - resembles a mining chip array
+        hashMeter = SKNode()
+        
+        // Position inside the main Bitcoin circle, below the high score
+        // This will make it more visible and properly spaced from other elements
+        hashMeter.position = CGPoint(x: centerCircle.position.x, y: centerCircle.position.y - 70)
+        hashMeter.zPosition = 5
+        addChild(hashMeter)
+        
+        // Create small "chip" elements arranged in a grid pattern
+        let bitcoinOrange = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0)
+        let chipSize: CGFloat = 4
+        let chipSpacing: CGFloat = 2
+        let rows = 3
+        let cols = 5
+        
+        for row in 0..<rows {
+            for col in 0..<cols {
+                let chip = SKShapeNode(rectOf: CGSize(width: chipSize, height: chipSize), cornerRadius: 1)
+                chip.fillColor = bitcoinOrange
+                chip.strokeColor = UIColor.orange.withAlphaComponent(0.5)
+                chip.position = CGPoint(
+                    x: CGFloat(col) * (chipSize + chipSpacing),
+                    y: CGFloat(row) * (chipSize + chipSpacing)
+                )
+                hashMeter.addChild(chip)
+                hashChips.append(chip)
+            }
+        }
+        
+        // Create hash rate label with Bitcoin font styling - make it larger and more visible
+        hashRateLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        hashRateLabel.fontSize = 16
+        hashRateLabel.fontColor = bitcoinOrange
+        hashRateLabel.position = CGPoint(x: 0, y: -15)
+        hashRateLabel.horizontalAlignmentMode = .center
+        hashRateLabel.text = "1 TH/s"
+        hashMeter.addChild(hashRateLabel)
+        
+        // Add label explaining what this represents - make it clearer
+        let descriptionLabel = SKLabelNode(fontNamed: "AvenirNext")
+        descriptionLabel.fontSize = 12
+        descriptionLabel.fontColor = .white
+        descriptionLabel.position = CGPoint(x: 0, y: -32)
+        descriptionLabel.horizontalAlignmentMode = .center
+        descriptionLabel.text = "HASHRATE"
+        hashMeter.addChild(descriptionLabel)
+        
+        // Start with initial visualization
+        updateHashRate()
+    }
+    
+    private func updateHashRate() {
+        // Calculate a new potential hash rate based on current score
+        // Use the base hash rate as a starting point
+        let scoreHashRate = baseHashRate * pow(1.15, Double(score) / 5)
+        
+        // Always use whichever is higher - this ensures hash rate never decreases
+        currentHashRate = max(scoreHashRate, currentHashRate)
+        
+        // Format the hash rate with appropriate units - always in EH/s since we're using realistic Bitcoin values
+        let formattedRate = String(format: "%.1f EH/s", currentHashRate)
+        
+        hashRateLabel.text = formattedRate
+        
+        // Visual effect: pulse the chips at different rates based on hash power
+        for (index, chip) in hashChips.enumerated() {
+            // Remove existing actions
+            chip.removeAllActions()
+            
+            // Calculate pulse speed based on hash rate and chip position
+            let pulseSpeed = 0.5 / min(5.0, max(0.2, Double(score) / 20.0))
+            let delay = Double(index) * pulseSpeed / Double(hashChips.count)
+            
+            // Create pulse animation
+            let pulse = SKAction.sequence([
+                SKAction.wait(forDuration: delay),
+                SKAction.fadeAlpha(to: 0.3, duration: pulseSpeed * 0.4),
+                SKAction.fadeAlpha(to: 1.0, duration: pulseSpeed * 0.6)
+            ])
+            
+            // Run continuous pulse animation
+            chip.run(SKAction.repeatForever(pulse))
+        }
     }
     
     // MARK: - Visual Effects
