@@ -1,6 +1,11 @@
-# No2ndBest
+<div align="center">
+  <img src="assets/app_icon.png" alt="No2ndBest Logo" width="200" height="200">
+  <h1>No2ndBest</h1>
+</div>
 
+<p align="center">
 A Bitcoin-themed iOS arcade game created with SpriteKit where players destroy altcoin bubbles with lightning attacks.
+</p>
 
 ## Description
 
