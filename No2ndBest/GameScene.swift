@@ -706,33 +706,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             // Get the bubble node - it's either bodyA or bodyB
             let bubbleNode = (bodyA.categoryBitMask == bubbleCategory) ? bodyA.node : bodyB.node
+            let centerNode = (bodyA.categoryBitMask == ballCategory) ? bodyA.node : bodyB.node
             
-            // Get the bubble position for the explosion effect
-            guard let bubblePosition = bubbleNode?.position else { return }
-            
-            // Create a bright explosion effect at collision point
-            createExplosion(at: bubblePosition, with: (bubbleNode as? SKShapeNode)?.fillColor ?? .white)
-            
-            // Play a subtle sound for the bubble explosion
-            SoundManager.shared.playSound(.successTap)
-            
-            // Keep track of the bubble to be removed
+            // Instead of popping bubbles, let them bounce off the center circle
+            // We'll just give them a slight pulse animation for visual feedback
             if let bubble = bubbleNode as? SKShapeNode {
-                // Wait a tiny bit before removing so explosion can be seen
-                bubble.run(SKAction.sequence([
-                    SKAction.wait(forDuration: 0.05),
-                    SKAction.removeFromParent()
-                ]))
+                // Apply a subtle pulse animation
+                let pulseAction = SKAction.sequence([
+                    SKAction.scale(to: 1.15, duration: 0.1),
+                    SKAction.scale(to: 1.0, duration: 0.1)
+                ])
+                bubble.run(pulseAction)
                 
-                // Remove from our tracking array
-                if let index = cryptoBubbles.firstIndex(of: bubble) {
-                    cryptoBubbles.remove(at: index)
-                    
-                    // Add a replacement bubble after a short delay
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-                        self?.addReplacementBubble()
-                    }
-                }
+                // Apply a little extra bounce restitution to make the collision feel more dynamic
+                // but only for a brief moment
+                let originalRestitution = bubble.physicsBody?.restitution ?? 0.9
+                bubble.physicsBody?.restitution = 1.2
+                
+                // Reset the restitution after a short time
+                bubble.run(SKAction.sequence([
+                    SKAction.wait(forDuration: 0.2),
+                    SKAction.run { bubble.physicsBody?.restitution = originalRestitution }
+                ]))
             }
         }
     }
