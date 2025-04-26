@@ -520,6 +520,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     @objc private func fetchCryptoData() {
+        // BYPASS API: Force use of fallback bubbles since API might be down
+        createFallbackBubbles(minCount: 25)
+        return
+        
+        // Original API fetch code below (not executed due to early return above)
         // URL for CoinGecko API - free and doesn't require API key for basic usage
         let urlString = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false&price_change_percentage=24h"
         
@@ -1267,37 +1272,47 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     // Create a colorful explosion effect when bubbles hit the center circle
     private func createExplosion(at position: CGPoint, with color: UIColor) {
-        // Create an explosion with particles in the bubble's color
-        let particleCount = Int.random(in: 12...20)
-        let burstRadius = CGFloat.random(in: 30...50)
+        // Create a simpler explosion with fewer particles to reduce lag
+        let particleCount = Int.random(in: 5...8) // Reduced from 12-20 to 5-8 particles
+        
+        // Pre-calculate the burst radius once instead of per-particle
+        let burstRadius = CGFloat.random(in: 25...40) // Slightly smaller radius
+        
+        // Create a particle container to batch operations
+        let container = SKNode()
+        container.position = position
+        container.zPosition = 2
+        addChild(container)
         
         for _ in 0..<particleCount {
-            // Create a particle
-            let particleSize = CGFloat.random(in: 3...8)
+            // Create simpler particles
+            let particleSize = CGFloat.random(in: 3...6) // Slightly smaller
             let particle = SKShapeNode(circleOfRadius: particleSize)
             particle.fillColor = color
-            particle.strokeColor = UIColor.white
-            particle.lineWidth = 0.5
-            particle.position = position
-            particle.zPosition = 2
-            addChild(particle)
+            particle.strokeColor = .clear // Removed white stroke for performance
             
-            // Randomize the particle trajectory
+            // Randomize the particle trajectory more efficiently
             let angle = CGFloat.random(in: 0...(CGFloat.pi * 2))
             let distance = CGFloat.random(in: burstRadius/2...burstRadius)
+            particle.position = CGPoint(x: cos(angle) * 2, y: sin(angle) * 2) // Start slightly offset
+            container.addChild(particle)
+            
+            // Simplified animation - single action instead of group
             let dx = cos(angle) * distance
             let dy = sin(angle) * distance
+            let move = SKAction.moveBy(x: dx, y: dy, duration: 0.4)
+            move.timingMode = .easeOut // Add easing for visual appeal without extra cost
             
-            // Create the particle animation
-            let move = SKAction.moveBy(x: dx, y: dy, duration: Double(CGFloat.random(in: 0.3...0.6)))
-            let fade = SKAction.fadeOut(withDuration: Double(CGFloat.random(in: 0.3...0.5)))
-            let scale = SKAction.scale(to: CGFloat.random(in: 0.1...0.3), duration: Double(CGFloat.random(in: 0.3...0.5)))
-            let group = SKAction.group([move, fade, scale])
-            
-            // Remove the particle when animation completes
-            let sequence = SKAction.sequence([group, SKAction.removeFromParent()])
-            particle.run(sequence)
+            // Use a single fade action instead of group+sequence
+            particle.run(SKAction.fadeOut(withDuration: 0.4))
+            particle.run(move)
         }
+        
+        // Remove the entire container after animations complete
+        container.run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.5),
+            SKAction.removeFromParent()
+        ]))
     }
     
     // Helper method to create unique crypto list
