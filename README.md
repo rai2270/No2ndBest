@@ -11,7 +11,7 @@ No2ndBest is a fast-paced Bitcoin-themed mobile game that challenges players to 
 ## Features
 
 - **Multi-Lightning Attack System**: Successfully tap the target to trigger multiple simultaneous lightning strikes that destroy 4-9 altcoin bubbles at once
-- **Real-time Crypto Data**: Fetches live cryptocurrency data from CoinGecko API
+- **Diverse Crypto Bubbles**: Features 30+ different cryptocurrency symbols floating around the Bitcoin central circle
 - **Bitcoin Dominance Meter**: Track Bitcoin's market dominance as you play
 - **Bitcoin Wisdom**: Famous Bitcoin maximalist quotes appear when bubbles pop
 - **Rich Visual Effects**: Smooth animations with fluid ball movement, colorful explosion particles, and shimmering bubble effects
@@ -44,8 +44,10 @@ This game was inspired by the Bitcoin maximalist philosophy, particularly the fa
 ## Features Recently Added
 
 - Enhanced Bitcoin-themed main menu with glowing effects
-- Increased bubble density with 50+ unique cryptocurrency bubbles on screen
-- Colorful explosion effects when bubbles collide with the center circle
+- Increased bubble density with 30+ unique cryptocurrency bubbles on screen
+- Optimized explosion effects with adaptive performance scaling
+- Improved game performance with reduced lag during multiple simultaneous explosions
+- Simplified visual elements for smoother gameplay on all devices
 - Shimmering effect on all cryptocurrency bubbles
 - Sequential display of Bitcoin wisdom quotes
 
