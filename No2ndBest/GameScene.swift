@@ -29,10 +29,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var highScore: Int = 0
     private var gameRunning = false
     private var lastTapTime: TimeInterval = 0
+    private var currentTime: TimeInterval = 0
+    private var lastShownQuote: String = ""  // Track last shown quote to avoid repetition
     private var gameSpeed: CGFloat = 1.0
     private var speedIncrease: CGFloat = 0.1
     private var hitAccuracy: CGFloat = 6.0  // Increased initial hit area
-    private var currentTime: TimeInterval = 0
     private var pathAngle: CGFloat = 0
     private var missedTaps: Int = 0
     private var maxMissedTaps: Int = 3  // Allow 3 missed taps before game over
@@ -71,8 +72,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     private func setupGame() {
         // Setup dimensions based on screen size
-        radius = min(size.width, size.height) * 0.3
-        ballRadius = radius * 0.075
+        radius = min(size.width, size.height) * 0.4  // Increased from 0.3 to 0.4 for a larger game circle
+        ballRadius = radius * 0.15  // Doubled from 0.075 to 0.15 for a more prominent ball
         let center = CGPoint(x: size.width/2, y: size.height/2)
         
         // Add stars to background
@@ -98,12 +99,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // First, create the main circular path
         let mainPath = SKShapeNode(circleOfRadius: radius)
-        mainPath.strokeColor = UIColor(red: 0.95, green: 0.7, blue: 0.2, alpha: 0.4) // Bitcoin gold color
+        mainPath.strokeColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 0.9) // Bitcoin orange, more vibrant
         
         // Add physics body to the center circle to make bubbles bounce off it
         centerCircle = SKShapeNode(circleOfRadius: radius)
-        centerCircle.fillColor = .clear
-        centerCircle.strokeColor = .clear
+        centerCircle.fillColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 0.1) // Bitcoin orange with transparency
+        centerCircle.strokeColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 0.4) // Bitcoin orange border
         centerCircle.position = center
         centerCircle.zPosition = 10
         
@@ -115,7 +116,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         centerCircle.physicsBody?.contactTestBitMask = bubbleCategory
         centerCircle.physicsBody?.restitution = 0.9 // High bounce
         addChild(centerCircle)
-        mainPath.lineWidth = 2
+        mainPath.lineWidth = 3 // Thicker, more visible line
         mainPath.position = center
         mainPath.zPosition = -1
         addChild(mainPath)
@@ -274,11 +275,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Add Bitcoin "₿" symbol to the ball
         let bitcoinSymbol = SKLabelNode(text: "₿")
-        bitcoinSymbol.fontSize = ballRadius * 1.2
+        bitcoinSymbol.fontSize = ballRadius * 2.0 // Increased from 1.2 to 2.0 for a much larger symbol
         bitcoinSymbol.fontName = "AvenirNext-Bold"
         bitcoinSymbol.verticalAlignmentMode = .center
         bitcoinSymbol.horizontalAlignmentMode = .center
-        bitcoinSymbol.fontColor = .white
+        bitcoinSymbol.fontColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0) // Bitcoin orange color
         bitcoinSymbol.name = "bitcoinSymbol"
         ball.addChild(bitcoinSymbol)
         
@@ -302,14 +303,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         addChild(ball)
         
-        // Add "TAP" text to tap target
-        let tapText = SKLabelNode(fontNamed: "AvenirNext-Bold")
-        tapText.fontSize = ballRadius * 0.9
-        tapText.position = tapPosition
-        tapText.text = "TAP"
-        tapText.fontColor = .white
-        tapText.verticalAlignmentMode = .center
-        addChild(tapText)
+        // "TAP HERE!" text above is sufficient, no additional tap text needed
+        
+        // Add the 'No Second Best' motto at the top with better visibility
+        // Create a dark background rect for better visibility
+        let backgroundRect = SKShapeNode(rect: CGRect(x: 0, y: size.height - 90, width: size.width, height: 40), cornerRadius: 0)
+        backgroundRect.fillColor = UIColor.black.withAlphaComponent(0.6)
+        backgroundRect.strokeColor = .clear
+        backgroundRect.zPosition = 9
+        backgroundRect.name = "mottoBackground"
+        addChild(backgroundRect)
+        
+        // Add the motto text
+        let mottoLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        mottoLabel.text = "There is no second best."
+        mottoLabel.fontSize = 24
+        mottoLabel.fontColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0) // Bitcoin orange
+        mottoLabel.position = CGPoint(x: size.width/2, y: size.height - 70) // Better position
+        mottoLabel.horizontalAlignmentMode = .center
+        mottoLabel.name = "mottoLabel"
+        mottoLabel.zPosition = 10
+        addChild(mottoLabel)
     }
     
     private func startGame() {
@@ -349,20 +363,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
         // Display help message
-        let helpLabel = SKLabelNode(fontNamed: "AvenirNext-Medium")
-        helpLabel.fontSize = size.height * 0.03
-        helpLabel.position = CGPoint(x: size.width/2, y: size.height * 0.9)
-        helpLabel.text = "Tap when ball overlaps with TAP! (\(maxMissedTaps) misses allowed)"
-        helpLabel.fontColor = .white
-        helpLabel.name = "helpLabel"
-        addChild(helpLabel)
-        
-        // Fade out help message
-        helpLabel.run(SKAction.sequence([
-            SKAction.wait(forDuration: 3.0),
-            SKAction.fadeOut(withDuration: 1.0),
-            SKAction.removeFromParent()
-        ]))
+        // Visual "TAP HERE!" guidance is sufficient - no additional instructions needed
         
         // Start animation
         let scalePulse = SKAction.sequence([
@@ -706,7 +707,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             // Get the bubble node - it's either bodyA or bodyB
             let bubbleNode = (bodyA.categoryBitMask == bubbleCategory) ? bodyA.node : bodyB.node
-            let centerNode = (bodyA.categoryBitMask == ballCategory) ? bodyA.node : bodyB.node
+            // We don't need to track the center node explicitly
+            _ = (bodyA.categoryBitMask == ballCategory) ? bodyA.node : bodyB.node
             
             // Instead of popping bubbles, let them bounce off the center circle
             // We'll just give them a slight pulse animation for visual feedback
@@ -1618,29 +1620,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             node.removeFromParent()
         }
         
-        // Array of Michael Saylor Bitcoin quotes
+        // Array of Michael Saylor Bitcoin quotes (shortened for better display)
         let saylorQuotes = [
-            "There is no second best.",
-            "Bitcoin is digital gold in the palm of your hand.",
-            "Bitcoin is a swarm of cyber hornets serving the goddess of wisdom.",
-            "The winners of the 21st century are going to be the people that own high-quality scarce assets.",
-            "You don't need to buy a whole Bitcoin. Stack sats.",
+            "Bitcoin is digital gold.",
             "Bitcoin is hope.",
-            "I have seen the future and it is Bitcoin.",
-            "Bitcoin is the first engineered safe-haven asset.",
             "Bitcoin is inevitable.",
+            "Stack sats.",
             "Bitcoin is economic security."
         ]
         
-        // Pick a random quote
-        let quote = saylorQuotes.randomElement() ?? "There is no second best."
+        // Pick a random quote, ensuring we don't repeat the last shown quote
+        var quote = ""
+        repeat {
+            quote = saylorQuotes.randomElement() ?? "Bitcoin is inevitable."
+        } while quote == lastShownQuote && saylorQuotes.count > 1
+        
+        // Update the last shown quote
+        lastShownQuote = quote
         
         // Create label for the quote
         let quoteLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         quoteLabel.text = quote
-        quoteLabel.fontSize = 18
+        quoteLabel.fontSize = 24  // Increased from 18 to 24 for better readability
         quoteLabel.fontColor = .orange
-        quoteLabel.position = CGPoint(x: size.width/2, y: 50)
+        quoteLabel.position = CGPoint(x: size.width/2, y: 70)  // Raised position to avoid bottom cutoff
         quoteLabel.zPosition = 100
         quoteLabel.name = "saylorQuoteLabel" // Add a name to identify quote labels
         addChild(quoteLabel)
