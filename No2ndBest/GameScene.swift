@@ -1216,13 +1216,51 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         generator.impactOccurred()
     }
     
-    // Create a colorful explosion effect when bubbles hit the center circle
-    private func createExplosion(at position: CGPoint, with color: UIColor) {
-        // Create a simpler explosion with fewer particles to reduce lag
-        let particleCount = Int.random(in: 5...8) // Reduced from 12-20 to 5-8 particles
+    // MARK: - Visual Effects
+    
+    // Track recent explosions to throttle when too many happen at once
+    private var recentExplosions = 0
+    private var lastExplosionTime: TimeInterval = 0
+    
+    private func createExplosion(at position: CGPoint, color: UIColor) {
+        // Performance optimization: limit explosions when multiple happen in quick succession
+        let currentTime = CACurrentMediaTime()
         
-        // Pre-calculate the burst radius once instead of per-particle
-        let burstRadius = CGFloat.random(in: 25...40) // Slightly smaller radius
+        // Reset counter if enough time has passed
+        if currentTime - lastExplosionTime > 0.5 {
+            recentExplosions = 0
+        }
+        
+        // Update explosion tracking
+        recentExplosions += 1
+        lastExplosionTime = currentTime
+        
+        // When many explosions happen at once, use a simplified effect
+        let isHighLoad = recentExplosions > 2
+        
+        // Extremely simplified version under high load
+        if isHighLoad {
+            // Just show a single sprite that scales and fades out
+            let flash = SKShapeNode(circleOfRadius: 20)
+            flash.fillColor = color
+            flash.alpha = 0.7
+            flash.position = position
+            flash.zPosition = 2
+            addChild(flash)
+            
+            // Simple scale and fade
+            let scaleAction = SKAction.scale(to: 1.5, duration: 0.2)
+            let fadeAction = SKAction.fadeOut(withDuration: 0.2)
+            flash.run(SKAction.group([scaleAction, fadeAction])) { [weak flash] in
+                flash?.removeFromParent()
+            }
+            return
+        }
+        
+        // Regular load - use a more efficient but still visually appealing effect
+        // Use just 3-4 particles instead of 5-8
+        let particleCount = Int.random(in: 3...4)
+        let burstRadius = CGFloat.random(in: 20...30)
         
         // Create a particle container to batch operations
         let container = SKNode()
@@ -1231,32 +1269,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         addChild(container)
         
         for _ in 0..<particleCount {
-            // Create simpler particles
-            let particleSize = CGFloat.random(in: 3...6) // Slightly smaller
+            let particleSize = CGFloat.random(in: 3...5)
             let particle = SKShapeNode(circleOfRadius: particleSize)
             particle.fillColor = color
-            particle.strokeColor = .clear // Removed white stroke for performance
+            particle.strokeColor = .clear
             
-            // Randomize the particle trajectory more efficiently
             let angle = CGFloat.random(in: 0...(CGFloat.pi * 2))
             let distance = CGFloat.random(in: burstRadius/2...burstRadius)
-            particle.position = CGPoint(x: cos(angle) * 2, y: sin(angle) * 2) // Start slightly offset
+            particle.position = .zero
             container.addChild(particle)
             
-            // Simplified animation - single action instead of group
+            // Combine move and fade into a single group action
             let dx = cos(angle) * distance
             let dy = sin(angle) * distance
-            let move = SKAction.moveBy(x: dx, y: dy, duration: 0.4)
-            move.timingMode = .easeOut // Add easing for visual appeal without extra cost
+            let moveAction = SKAction.moveBy(x: dx, y: dy, duration: 0.3)
+            let fadeAction = SKAction.fadeOut(withDuration: 0.3)
             
-            // Use a single fade action instead of group+sequence
-            particle.run(SKAction.fadeOut(withDuration: 0.4))
-            particle.run(move)
+            // Group actions for better performance
+            particle.run(SKAction.group([moveAction, fadeAction]))
         }
         
-        // Remove the entire container after animations complete
+        // Remove container quickly
         container.run(SKAction.sequence([
-            SKAction.wait(forDuration: 0.5),
+            SKAction.wait(forDuration: 0.3),
             SKAction.removeFromParent()
         ]))
     }
