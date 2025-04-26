@@ -72,7 +72,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func setupGame() {
         // Setup dimensions based on screen size
         radius = min(size.width, size.height) * 0.3
-        ballRadius = radius * 0.075
+        ballRadius = radius * 0.15  // Doubled from 0.075 to 0.15 for a more prominent ball
         let center = CGPoint(x: size.width/2, y: size.height/2)
         
         // Add stars to background
@@ -302,20 +302,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         addChild(ball)
         
-        // Add "TAP" text to tap target
-        let tapText = SKLabelNode(fontNamed: "AvenirNext-Bold")
-        tapText.fontSize = ballRadius * 1.0 // Slightly larger
-        tapText.position = tapPosition
-        tapText.text = "₿ TAP ₿" // Add Bitcoin symbols
-        tapText.fontColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0) // Bitcoin orange
-        tapText.verticalAlignmentMode = .center
-        
-        // Add glow effect for the text
-        let textGlowEffect = SKEffectNode()
-        textGlowEffect.shouldEnableEffects = true
-        textGlowEffect.filter = CIFilter(name: "CIGaussianBlur", parameters: ["inputRadius": 1.0])
-        tapText.addChild(textGlowEffect)
-        addChild(tapText)
+        // "TAP HERE!" text above is sufficient, no additional tap text needed
     }
     
     private func startGame() {
@@ -1625,17 +1612,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             node.removeFromParent()
         }
         
-        // Array of Michael Saylor Bitcoin quotes
+        // Array of Michael Saylor Bitcoin quotes (shortened for better display)
         let saylorQuotes = [
             "There is no second best.",
-            "Bitcoin is digital gold in the palm of your hand.",
-            "Bitcoin is a swarm of cyber hornets serving the goddess of wisdom.",
-            "The winners of the 21st century are going to be the people that own high-quality scarce assets.",
-            "You don't need to buy a whole Bitcoin. Stack sats.",
+            "Bitcoin is digital gold.",
             "Bitcoin is hope.",
-            "I have seen the future and it is Bitcoin.",
-            "Bitcoin is the first engineered safe-haven asset.",
             "Bitcoin is inevitable.",
+            "Stack sats.",
             "Bitcoin is economic security."
         ]
         
@@ -1645,9 +1628,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Create label for the quote
         let quoteLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         quoteLabel.text = quote
-        quoteLabel.fontSize = 18
+        quoteLabel.fontSize = 24  // Increased from 18 to 24 for better readability
         quoteLabel.fontColor = .orange
-        quoteLabel.position = CGPoint(x: size.width/2, y: 50)
+        quoteLabel.position = CGPoint(x: size.width/2, y: 70)  // Raised position to avoid bottom cutoff
         quoteLabel.zPosition = 100
         quoteLabel.name = "saylorQuoteLabel" // Add a name to identify quote labels
         addChild(quoteLabel)
