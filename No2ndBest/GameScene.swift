@@ -330,23 +330,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Initialize based on difficulty setting
         let difficulty = UserDefaults.standard.integer(forKey: "difficulty")
         
+        // Check if this is the first time playing the game
+        let hasPlayedBefore = UserDefaults.standard.bool(forKey: "hasPlayedBefore")
+        
         gameRunning = true
         score = 0
-        // Adjust initial game speed based on difficulty
+        
+        // Adjust initial game speed based on difficulty and whether they've played before
         switch difficulty {
         case 0: // Easy
-            gameSpeed = 0.8
-            speedIncrease = 0.08
+            // First-time players get faster ball (current speed)
+            // Returning players get slower ball (previous speed)
+            gameSpeed = hasPlayedBefore ? 0.7 : 0.8
+            speedIncrease = hasPlayedBefore ? 0.07 : 0.08
             hitAccuracy = 7.0
             maxMissedTaps = 5
         case 2: // Hard
-            gameSpeed = 1.2
-            speedIncrease = 0.12
+            gameSpeed = hasPlayedBefore ? 1.1 : 1.2
+            speedIncrease = hasPlayedBefore ? 0.11 : 0.12
             hitAccuracy = 5.0
             maxMissedTaps = 2
         default: // Medium (default)
-            gameSpeed = 1.0
-            speedIncrease = 0.1
+            gameSpeed = hasPlayedBefore ? 0.9 : 1.0
+            speedIncrease = hasPlayedBefore ? 0.09 : 0.1
             hitAccuracy = 6.0
             maxMissedTaps = 3
         }
@@ -381,6 +387,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Select a new random music track for the next game
         SoundManager.shared.selectNewTrack()
+        
+        // Mark that the user has played before - this will enable slower ball speed on next play
+        UserDefaults.standard.set(true, forKey: "hasPlayedBefore")
+        UserDefaults.standard.synchronize()
         
         // Haptic feedback for game over
         let generator = UINotificationFeedbackGenerator()
