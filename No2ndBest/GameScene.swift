@@ -72,7 +72,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     private func setupGame() {
         // Setup dimensions based on screen size
-        radius = min(size.width, size.height) * 0.3
+        radius = min(size.width, size.height) * 0.4  // Increased from 0.3 to 0.4 for a larger game circle
         ballRadius = radius * 0.15  // Doubled from 0.075 to 0.15 for a more prominent ball
         let center = CGPoint(x: size.width/2, y: size.height/2)
         
