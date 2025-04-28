@@ -1664,14 +1664,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Get center circle position and dimensions
         let centerX = size.width / 2
         let centerY = size.height / 2
-        let circleRadius = radius + 20 // Add padding to ensure bubbles start outside circle
+        // Note: radius is already defined as a class property
         
         // Configure physics world for better bubble interactions
         physicsWorld.gravity = CGVector(dx: 0, dy: -0.05) // Original gravity value
         
         // Place bubbles with full screen coverage but avoiding center circle
         for bubble in cryptoBubbles {
-            var validPosition = false
+            // Initialize position variables
             var xPos: CGFloat = 0
             var yPos: CGFloat = 0
             
@@ -1683,9 +1683,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // This will make them enter the screen gradually rather than all at once
             let extraHeight = CGFloat.random(in: 100...500) // Random extra height above screen
             yPos = size.height + extraHeight
-            
-            // No need to check distance from center circle since bubbles start off-screen
-            validPosition = true
             
             bubble.position = CGPoint(x: xPos, y: yPos)
             
