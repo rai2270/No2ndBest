@@ -25,7 +25,7 @@ class SoundManager {
     private init() {
         // Set default values in UserDefaults if not set
         if UserDefaults.standard.object(forKey: "musicEnabled") == nil {
-            UserDefaults.standard.set(true, forKey: "musicEnabled")
+            UserDefaults.standard.set(false, forKey: "musicEnabled")
         }
         
         if UserDefaults.standard.object(forKey: "soundEnabled") == nil {
