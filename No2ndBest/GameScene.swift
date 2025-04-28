@@ -42,8 +42,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var hashMeter: SKNode!
     private var hashChips = [SKShapeNode]()
     private var hashRateLabel: SKLabelNode!
-    private var currentHashRate: Double = 500.0 // Default starting rate in EH/s
-    private var baseHashRate: Double = 500.0 // Base rate that grows over time in EH/s
+    private var currentHashRate: Double = 500.0 // Default starting rate in MH/s
+    private var baseHashRate: Double = 500.0 // Base rate that grows over time in MH/s
     
     // Physics categories for crypto bubbles
     private let bubbleCategory: UInt32 = 0x1 << 0
@@ -1259,14 +1259,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Bitcoin hash power visualization - resembles a mining chip array
         hashMeter = SKNode()
         
-        // Position inside the main Bitcoin circle, below the high score
-        // This will make it more visible and properly spaced from other elements
-        hashMeter.position = CGPoint(x: centerCircle.position.x, y: centerCircle.position.y - 70)
+        // Position below the main circle instead of inside it
+        // Note: Main circle radius is determined in setupGame() with radius variable
+        let circleBottom = centerCircle.position.y - radius
+        hashMeter.position = CGPoint(x: centerCircle.position.x, y: circleBottom - 40) // 40 points below the circle
         hashMeter.zPosition = 5
         addChild(hashMeter)
         
         // Create hash rate label with Bitcoin font styling - make it larger and more visible
-        let bitcoinOrange = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0)
+        let bitcoinOrange = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0) // Bitcoin orange
         hashRateLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         hashRateLabel.fontSize = 16
         hashRateLabel.fontColor = bitcoinOrange
@@ -1323,8 +1324,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Cap the maximum hash rate to prevent display issues
         currentHashRate = min(5000.0, max(scoreHashRate, currentHashRate))
         
-        // Format the hash rate with appropriate units - always in EH/s since we're using realistic Bitcoin values
-        let formattedRate = String(format: "%.1f EH/s", currentHashRate)
+        // Format the hash rate with appropriate units that scale automatically through the Bitcoin mining units
+        // Start with MH/s and progress through: MH/s → GH/s → TH/s → PH/s → EH/s → ZH/s
+        var displayRate = currentHashRate
+        var unit = "MH/s" // Start with Megahashes
+        
+        // Scale through the units as the hash rate grows
+        if displayRate >= 1000 {
+            displayRate /= 1000
+            unit = "GH/s" // Gigahashes
+        }
+        
+        if displayRate >= 1000 {
+            displayRate /= 1000
+            unit = "TH/s" // Terahashes
+        }
+        
+        if displayRate >= 1000 {
+            displayRate /= 1000
+            unit = "PH/s" // Petahashes
+        }
+        
+        if displayRate >= 1000 {
+            displayRate /= 1000
+            unit = "EH/s" // Exahashes
+        }
+        
+        if displayRate >= 1000 {
+            displayRate /= 1000
+            unit = "ZH/s" // Zettahashes
+        }
+        
+        // Cap at 999.9 ZH/s to prevent layout issues
+        displayRate = min(999.9, displayRate)
+        
+        // Format with the number and unit
+        let formattedRate = String(format: "%.1f %@", displayRate, unit)
         
         hashRateLabel.text = formattedRate
         
