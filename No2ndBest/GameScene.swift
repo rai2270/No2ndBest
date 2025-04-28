@@ -1667,7 +1667,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let circleRadius = radius + 20 // Add padding to ensure bubbles start outside circle
         
         // Configure physics world for better bubble interactions
-        physicsWorld.gravity = CGVector(dx: 0, dy: -0.05) // Very slight gravity
+        physicsWorld.gravity = CGVector(dx: 0, dy: -0.05) // Original gravity value
         
         // Place bubbles with full screen coverage but avoiding center circle
         for bubble in cryptoBubbles {
@@ -1675,22 +1675,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             var xPos: CGFloat = 0
             var yPos: CGFloat = 0
             
-            // Keep trying positions until we find one outside the center circle
-            while !validPosition {
-                // Generate a random position across entire screen with padding
-                xPos = CGFloat.random(in: 40...size.width-40)
-                yPos = CGFloat.random(in: 40...size.height-40)
-                
-                // Calculate distance from center
-                let dx = xPos - centerX
-                let dy = yPos - centerY
-                let distanceFromCenter = sqrt(dx*dx + dy*dy)
-                
-                // Position is valid if it's outside the center circle
-                if distanceFromCenter > circleRadius {
-                    validPosition = true
-                }
-            }
+            // Make bubbles start from off-screen at the top
+            // This creates a gradual "raining down" effect as bubbles enter the play area
+            xPos = CGFloat.random(in: 40...size.width-40)
+            
+            // Position bubbles above the visible screen area with staggered heights
+            // This will make them enter the screen gradually rather than all at once
+            let extraHeight = CGFloat.random(in: 100...500) // Random extra height above screen
+            yPos = size.height + extraHeight
+            
+            // No need to check distance from center circle since bubbles start off-screen
+            validPosition = true
             
             bubble.position = CGPoint(x: xPos, y: yPos)
             
@@ -1704,6 +1699,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let directionX = dx / magnitude
             let directionY = dy / magnitude
             
+            // Apply the original stronger impulse for faster movement
+            // Direction is still calculated away from center for proper movement
             let randomImpulse = CGVector(
                 dx: directionX * CGFloat.random(in: 5...15) + CGFloat.random(in: -15...15),
                 dy: directionY * CGFloat.random(in: 5...15) + CGFloat.random(in: -15...15)
