@@ -1259,14 +1259,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Bitcoin hash power visualization - resembles a mining chip array
         hashMeter = SKNode()
         
-        // Position inside the main Bitcoin circle, below the high score
-        // This will make it more visible and properly spaced from other elements
-        hashMeter.position = CGPoint(x: centerCircle.position.x, y: centerCircle.position.y - 70)
+        // Position below the main circle instead of inside it
+        // Note: Main circle radius is determined in setupGame() with radius variable
+        let circleBottom = centerCircle.position.y - radius
+        hashMeter.position = CGPoint(x: centerCircle.position.x, y: circleBottom - 40) // 40 points below the circle
         hashMeter.zPosition = 5
         addChild(hashMeter)
         
         // Create hash rate label with Bitcoin font styling - make it larger and more visible
-        let bitcoinOrange = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0)
+        let bitcoinOrange = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0) // Bitcoin orange
         hashRateLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         hashRateLabel.fontSize = 16
         hashRateLabel.fontColor = bitcoinOrange
