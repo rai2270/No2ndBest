@@ -48,8 +48,11 @@ class SettingsScene: SKScene {
         settingsContainer.zPosition = 10
         addChild(settingsContainer)
         
+        // Calculate header width based on screen size for consistency
+        let headerWidth = min(size.width * 0.9, 400) // Cap width for very large screens
+        
         // Create Bitcoin-styled header
-        let headerBackground = SKShapeNode(rectOf: CGSize(width: size.width * 0.9, height: 70), cornerRadius: 15)
+        let headerBackground = SKShapeNode(rectOf: CGSize(width: headerWidth, height: 70), cornerRadius: 15)
         headerBackground.fillColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 0.9) // Bitcoin orange
         headerBackground.strokeColor = .white
         headerBackground.lineWidth = 1.5
@@ -63,17 +66,18 @@ class SettingsScene: SKScene {
         titleLabel.fontSize = 36
         titleLabel.fontColor = .white
         titleLabel.verticalAlignmentMode = .center
-        titleLabel.position = CGPoint(x: 0, y: size.height * 0.35)
+        titleLabel.position = CGPoint(x: -30, y: size.height * 0.35) // Shift left slightly to make room for symbol
         titleLabel.zPosition = 2
         settingsContainer.addChild(titleLabel)
         
-        // Add Bitcoin symbol next to title
+        // Add Bitcoin symbol next to title - with responsive positioning
         let bitcoinSymbol = SKLabelNode(text: "₿")
         bitcoinSymbol.fontName = "AvenirNext-Bold"
         bitcoinSymbol.fontSize = 24
         bitcoinSymbol.fontColor = .white
         bitcoinSymbol.verticalAlignmentMode = .center
-        bitcoinSymbol.position = CGPoint(x: titleLabel.position.x + 100, y: titleLabel.position.y)
+        // Position relative to title, not exact points which can vary by device
+        bitcoinSymbol.position = CGPoint(x: titleLabel.position.x + titleLabel.frame.width/2 + 40, y: titleLabel.position.y)
         bitcoinSymbol.zPosition = 2
         settingsContainer.addChild(bitcoinSymbol)
         
@@ -137,19 +141,20 @@ class SettingsScene: SKScene {
         rowBackground.zPosition = 2
         parent.addChild(rowBackground)
         
-        // Create label with improved positioning
+        // Create label with improved positioning - left aligned for consistency
         let label = SKLabelNode(fontNamed: "AvenirNext-Medium")
         label.text = title
         label.fontSize = 22
         label.fontColor = .white
-        label.position = CGPoint(x: -size.width * 0.28, y: y)
+        // Position on left side with fixed margin for consistency
+        label.position = CGPoint(x: -size.width * 0.3, y: y) 
         label.horizontalAlignmentMode = .left
         label.verticalAlignmentMode = .center
         label.zPosition = 3
         parent.addChild(label)
         
-        // Create toggle switch with improved positioning
-        let toggle = createToggleSwitch(position: CGPoint(x: size.width * 0.25, y: y), isOn: enabled)
+        // Create toggle switch with improved positioning - consistently placed at right side
+        let toggle = createToggleSwitch(position: CGPoint(x: size.width * 0.22, y: y), isOn: enabled)
         toggle.zPosition = 3
         parent.addChild(toggle)
         completion(toggle)
@@ -187,8 +192,8 @@ class SettingsScene: SKScene {
     }
     
     private func addDifficultyControl(y: CGFloat, parent: SKNode) {
-        // Create row background for the difficulty section
-        let rowBackground = SKShapeNode(rectOf: CGSize(width: size.width * 0.8, height: 50), cornerRadius: 10)
+        // Create row background for the difficulty section with more height for large elements
+        let rowBackground = SKShapeNode(rectOf: CGSize(width: size.width * 0.8, height: 60), cornerRadius: 10)
         rowBackground.fillColor = UIColor(white: 0.2, alpha: 0.5)
         rowBackground.strokeColor = .clear
         rowBackground.position = CGPoint(x: 0, y: y)
@@ -200,7 +205,8 @@ class SettingsScene: SKScene {
         label.text = "Difficulty"
         label.fontSize = 22
         label.fontColor = .white
-        label.position = CGPoint(x: -size.width * 0.28, y: y)
+        // More leftward position to avoid overlap with the control
+        label.position = CGPoint(x: -size.width * 0.3, y: y)
         label.horizontalAlignmentMode = .left
         label.verticalAlignmentMode = .center
         label.zPosition = 3
@@ -209,15 +215,17 @@ class SettingsScene: SKScene {
         // Get current difficulty
         let difficulty = UserDefaults.standard.integer(forKey: "difficulty")
         
-        // Create difficulty selector
+        // Create difficulty selector with consistent sizing across devices
         let difficultyOptions = ["Easy", "Medium", "Hard"]
         
-        let segmentWidth: CGFloat = 60
+        // Calculate sizes relative to screen width for consistency
+        let segmentWidth: CGFloat = min(60, size.width / 8)
         let totalWidth: CGFloat = segmentWidth * CGFloat(difficultyOptions.count)
         
         // Create a background with a subtle gradient
         difficultyControl = SKShapeNode(rectOf: CGSize(width: totalWidth, height: 35), cornerRadius: 5)
-        difficultyControl.position = CGPoint(x: size.width * 0.25, y: y)
+        // Fixed position relative to the row's center rather than screen width percentage
+        difficultyControl.position = CGPoint(x: rowBackground.frame.width * 0.25, y: y)
         difficultyControl.fillColor = UIColor(red: 40/255, green: 40/255, blue: 45/255, alpha: 1.0) // Slightly lighter than darkGray
         difficultyControl.strokeColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 0.6) // Bitcoin orange border
         difficultyControl.lineWidth = 1.5
@@ -234,11 +242,13 @@ class SettingsScene: SKScene {
         
         parent.addChild(difficultyControl)
         
-        // Add selector indicator with Bitcoin orange color and glow effect
+        // Add selector indicator with Bitcoin orange color and glow effect - sized proportionally
         let selectedSegment = SKShapeNode(rectOf: CGSize(width: segmentWidth - 4, height: 31), cornerRadius: 3)
         selectedSegment.fillColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0) // Bitcoin orange
         selectedSegment.strokeColor = .clear
-        selectedSegment.position = CGPoint(x: -totalWidth/2 + segmentWidth/2 + CGFloat(difficulty) * segmentWidth, y: 0)
+        // Position exactly at the segment location
+        let segmentPosition = -totalWidth/2 + segmentWidth/2 + CGFloat(difficulty) * segmentWidth
+        selectedSegment.position = CGPoint(x: segmentPosition, y: 0)
         selectedSegment.name = "selectedSegment"
         selectedSegment.zPosition = 1
         
@@ -255,23 +265,26 @@ class SettingsScene: SKScene {
         
         difficultyControl.addChild(selectedSegment)
         
-        // Add text labels for options with improved contrast
+        // Add text labels for options with improved contrast - adjusted sizing for consistency
         for (index, option) in difficultyOptions.enumerated() {
             let optionLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
             optionLabel.text = option
-            optionLabel.fontSize = 16
+            // Adjust font size based on segment width for proper fit
+            let fontSize = min(16, segmentWidth * 0.25) // Scale font size with segment width up to max of 16
+            optionLabel.fontSize = fontSize
             
             // Enhanced contrast for the text
             if index == difficulty {
                 optionLabel.fontColor = .black // Black text on orange background
                 
-                // Add a small Bitcoin symbol for the selected option
+                // Add a small Bitcoin symbol for the selected option, positioned relative to segment width
                 if index == 1 { // Medium difficulty, add Bitcoin symbol
                     let btcSymbol = SKLabelNode(fontNamed: "AvenirNext-Bold")
                     btcSymbol.text = "₿"
                     btcSymbol.fontSize = 12
                     btcSymbol.fontColor = .black
-                    btcSymbol.position = CGPoint(x: optionLabel.position.x + 35, y: -12)
+                    // Position symbol relative to segment width rather than fixed pixel values
+                    btcSymbol.position = CGPoint(x: optionLabel.position.x + segmentWidth/2, y: -segmentWidth/5)
                     btcSymbol.verticalAlignmentMode = .center
                     btcSymbol.alpha = 0.7
                     btcSymbol.zPosition = 2
@@ -281,8 +294,11 @@ class SettingsScene: SKScene {
                 optionLabel.fontColor = UIColor(white: 1.0, alpha: 0.9) // Slightly off-white for better contrast
             }
             
-            optionLabel.position = CGPoint(x: -totalWidth/2 + segmentWidth/2 + CGFloat(index) * segmentWidth, y: 0)
+            // Ensure labels are perfectly centered within their segments
+            let segmentPosition = -totalWidth/2 + segmentWidth/2 + CGFloat(index) * segmentWidth
+            optionLabel.position = CGPoint(x: segmentPosition, y: 0)
             optionLabel.verticalAlignmentMode = .center
+            optionLabel.horizontalAlignmentMode = .center // Ensure center alignment
             optionLabel.name = "option\(index)"
             optionLabel.zPosition = 2
             difficultyControl.addChild(optionLabel)
@@ -385,7 +401,8 @@ class SettingsScene: SKScene {
         
         // Move the knob
         if let knob = toggle.childNode(withName: "knob") {
-            let width: CGFloat = 70
+            // Use the actual toggle width from the createToggleSwitch function
+            let width: CGFloat = 60
             let knobX: CGFloat = newState ? width/2 - 6 : -width/2 + 6
             let moveAction = SKAction.moveTo(x: knobX, duration: 0.2)
             knob.run(moveAction)
@@ -411,9 +428,9 @@ class SettingsScene: SKScene {
     }
     
     private func handleDifficultySelection(at location: CGPoint) {
-        // Calculate which segment was tapped
-        let segmentWidth: CGFloat = 60
-        let totalWidth: CGFloat = segmentWidth * 3
+        // Calculate which segment was tapped using the actual control size
+        let totalWidth: CGFloat = difficultyControl.frame.width
+        let segmentWidth: CGFloat = totalWidth / 3 // Three difficulty options
         let offsetX = location.x + totalWidth/2
         
         if offsetX < 0 || offsetX > totalWidth {
