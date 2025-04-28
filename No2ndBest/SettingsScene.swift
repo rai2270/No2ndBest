@@ -42,68 +42,127 @@ class SettingsScene: SKScene {
             star.run(SKAction.repeatForever(fadeAction))
         }
         
-        // Create scene title
+        // Create a container node for all settings elements for better organization
+        let settingsContainer = SKNode()
+        settingsContainer.position = CGPoint(x: size.width/2, y: size.height/2)
+        settingsContainer.zPosition = 10
+        addChild(settingsContainer)
+        
+        // Create Bitcoin-styled header
+        let headerBackground = SKShapeNode(rectOf: CGSize(width: size.width * 0.9, height: 70), cornerRadius: 15)
+        headerBackground.fillColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 0.9) // Bitcoin orange
+        headerBackground.strokeColor = .white
+        headerBackground.lineWidth = 1.5
+        headerBackground.position = CGPoint(x: 0, y: size.height * 0.35)
+        headerBackground.zPosition = 1
+        settingsContainer.addChild(headerBackground)
+        
+        // Create scene title with Bitcoin symbol
         let titleLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
         titleLabel.text = "Settings"
-        titleLabel.fontSize = 40
+        titleLabel.fontSize = 36
         titleLabel.fontColor = .white
-        titleLabel.position = CGPoint(x: size.width/2, y: size.height * 0.85)
-        addChild(titleLabel)
+        titleLabel.verticalAlignmentMode = .center
+        titleLabel.position = CGPoint(x: 0, y: size.height * 0.35)
+        titleLabel.zPosition = 2
+        settingsContainer.addChild(titleLabel)
         
-        // Create settings controls
-        let startY = size.height * 0.7
-        let spacing: CGFloat = 80
+        // Add Bitcoin symbol next to title
+        let bitcoinSymbol = SKLabelNode(text: "₿")
+        bitcoinSymbol.fontName = "AvenirNext-Bold"
+        bitcoinSymbol.fontSize = 24
+        bitcoinSymbol.fontColor = .white
+        bitcoinSymbol.verticalAlignmentMode = .center
+        bitcoinSymbol.position = CGPoint(x: titleLabel.position.x + 100, y: titleLabel.position.y)
+        bitcoinSymbol.zPosition = 2
+        settingsContainer.addChild(bitcoinSymbol)
         
-        // Music toggle
+        // Create settings panel background
+        let panelBackground = SKShapeNode(rectOf: CGSize(width: size.width * 0.9, height: size.height * 0.5), cornerRadius: 20)
+        panelBackground.fillColor = UIColor(white: 0.15, alpha: 0.7)  // Dark semi-transparent background
+        panelBackground.strokeColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 0.5) // Bitcoin orange border
+        panelBackground.lineWidth = 2
+        panelBackground.position = CGPoint(x: 0, y: 0)
+        panelBackground.zPosition = 0
+        settingsContainer.addChild(panelBackground)
+        
+        // Adjusted vertical spacing
+        let rowHeight: CGFloat = 70
+        let startY = panelBackground.frame.height / 2 - rowHeight
+        
+        // Music toggle - well separated from other controls
         let musicEnabled = UserDefaults.standard.bool(forKey: "musicEnabled")
-        addSettingRow(title: "Music", y: startY, enabled: musicEnabled) { toggle in
+        addSettingRow(title: "Music", y: startY, enabled: musicEnabled, parent: settingsContainer) { toggle in
             self.musicToggle = toggle
         }
         
-        // Sound effects toggle
+        // Sound effects toggle - with proper spacing
         let soundEnabled = UserDefaults.standard.bool(forKey: "soundEnabled")
-        addSettingRow(title: "Sound Effects", y: startY - spacing, enabled: soundEnabled) { toggle in
+        addSettingRow(title: "Sound Effects", y: startY - rowHeight, enabled: soundEnabled, parent: settingsContainer) { toggle in
             self.soundToggle = toggle
         }
         
-        // Difficulty slider
-        addDifficultyControl(y: startY - 2 * spacing)
+        // Difficulty control - with ample space from other elements
+        addDifficultyControl(y: startY - rowHeight * 2, parent: settingsContainer)
         
-        // Reset high score button
-        let resetButton = createTextButton(text: "Reset High Score", width: size.width * 0.8, height: 50, position: CGPoint(x: size.width/2, y: startY - 3 * spacing))
+        // Reset high score button - well separated
+        let resetButton = createTextButton(
+            text: "Reset High Score", 
+            width: size.width * 0.8, 
+            height: 50, 
+            position: CGPoint(x: 0, y: startY - rowHeight * 3.2),
+            bitcoinOrange: true
+        )
         resetButton.name = "reset"
-        addChild(resetButton)
+        settingsContainer.addChild(resetButton)
         
-        // Back button
-        backButton = createTextButton(text: "Back", width: size.width * 0.8, height: 60, position: CGPoint(x: size.width/2, y: size.height * 0.15))
+        // Back button with good spacing
+        backButton = createTextButton(
+            text: "Back", 
+            width: size.width * 0.7, 
+            height: 60, 
+            position: CGPoint(x: 0, y: -panelBackground.frame.height / 2 - 40),
+            bitcoinOrange: false
+        )
         backButton.name = "back"
-        addChild(backButton)
+        settingsContainer.addChild(backButton)
     }
     
-    private func addSettingRow(title: String, y: CGFloat, enabled: Bool, completion: @escaping (SKShapeNode) -> Void) {
-        // Create label
+    private func addSettingRow(title: String, y: CGFloat, enabled: Bool, parent: SKNode, completion: @escaping (SKShapeNode) -> Void) {
+        // Create row background for better visual separation
+        let rowBackground = SKShapeNode(rectOf: CGSize(width: size.width * 0.8, height: 50), cornerRadius: 10)
+        rowBackground.fillColor = UIColor(white: 0.2, alpha: 0.5)
+        rowBackground.strokeColor = .clear
+        rowBackground.position = CGPoint(x: 0, y: y)
+        rowBackground.zPosition = 2
+        parent.addChild(rowBackground)
+        
+        // Create label with improved positioning
         let label = SKLabelNode(fontNamed: "AvenirNext-Medium")
         label.text = title
-        label.fontSize = 24
+        label.fontSize = 22
         label.fontColor = .white
-        label.position = CGPoint(x: size.width * 0.3, y: y)
+        label.position = CGPoint(x: -size.width * 0.28, y: y)
         label.horizontalAlignmentMode = .left
-        addChild(label)
+        label.verticalAlignmentMode = .center
+        label.zPosition = 3
+        parent.addChild(label)
         
-        // Create toggle switch
-        let toggle = createToggleSwitch(position: CGPoint(x: size.width * 0.75, y: y), isOn: enabled)
-        addChild(toggle)
+        // Create toggle switch with improved positioning
+        let toggle = createToggleSwitch(position: CGPoint(x: size.width * 0.25, y: y), isOn: enabled)
+        toggle.zPosition = 3
+        parent.addChild(toggle)
         completion(toggle)
     }
     
     private func createToggleSwitch(position: CGPoint, isOn: Bool) -> SKShapeNode {
-        let width: CGFloat = 70
-        let height: CGFloat = 35
+        let width: CGFloat = 60
+        let height: CGFloat = 30
         
         let toggle = SKShapeNode(rectOf: CGSize(width: width, height: height), cornerRadius: height/2)
         toggle.position = position
-        toggle.fillColor = isOn ? .systemGreen : .darkGray
-        toggle.strokeColor = .lightGray
+        toggle.fillColor = isOn ? UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0) : .darkGray // Bitcoin orange when on
+        toggle.strokeColor = .white
         toggle.lineWidth = 1
         toggle.name = "toggle"
         
@@ -127,15 +186,25 @@ class SettingsScene: SKScene {
         return toggle
     }
     
-    private func addDifficultyControl(y: CGFloat) {
-        // Create label
+    private func addDifficultyControl(y: CGFloat, parent: SKNode) {
+        // Create row background for the difficulty section
+        let rowBackground = SKShapeNode(rectOf: CGSize(width: size.width * 0.8, height: 50), cornerRadius: 10)
+        rowBackground.fillColor = UIColor(white: 0.2, alpha: 0.5)
+        rowBackground.strokeColor = .clear
+        rowBackground.position = CGPoint(x: 0, y: y)
+        rowBackground.zPosition = 2
+        parent.addChild(rowBackground)
+        
+        // Create label with improved position
         let label = SKLabelNode(fontNamed: "AvenirNext-Medium")
         label.text = "Difficulty"
-        label.fontSize = 24
+        label.fontSize = 22
         label.fontColor = .white
-        label.position = CGPoint(x: size.width * 0.3, y: y + 35) // Move label above the control
+        label.position = CGPoint(x: -size.width * 0.28, y: y)
         label.horizontalAlignmentMode = .left
-        addChild(label)
+        label.verticalAlignmentMode = .center
+        label.zPosition = 3
+        parent.addChild(label)
         
         // Get current difficulty
         let difficulty = UserDefaults.standard.integer(forKey: "difficulty")
@@ -148,11 +217,12 @@ class SettingsScene: SKScene {
         
         // Create a background with a subtle gradient
         difficultyControl = SKShapeNode(rectOf: CGSize(width: totalWidth, height: 35), cornerRadius: 5)
-        difficultyControl.position = CGPoint(x: size.width * 0.7, y: y)
+        difficultyControl.position = CGPoint(x: size.width * 0.25, y: y)
         difficultyControl.fillColor = UIColor(red: 40/255, green: 40/255, blue: 45/255, alpha: 1.0) // Slightly lighter than darkGray
         difficultyControl.strokeColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 0.6) // Bitcoin orange border
         difficultyControl.lineWidth = 1.5
         difficultyControl.name = "difficultyControl"
+        difficultyControl.zPosition = 3
         
         // Add subtle inner shadow
         let innerShadow = SKShapeNode(rectOf: CGSize(width: totalWidth - 2, height: 33), cornerRadius: 4)
@@ -162,7 +232,7 @@ class SettingsScene: SKScene {
         innerShadow.zPosition = 0.5
         difficultyControl.addChild(innerShadow)
         
-        addChild(difficultyControl)
+        parent.addChild(difficultyControl)
         
         // Add selector indicator with Bitcoin orange color and glow effect
         let selectedSegment = SKShapeNode(rectOf: CGSize(width: segmentWidth - 4, height: 31), cornerRadius: 3)
@@ -223,20 +293,46 @@ class SettingsScene: SKScene {
         difficultyControl.userData?.setValue(difficulty, forKey: "difficulty")
     }
     
-    private func createTextButton(text: String, width: CGFloat, height: CGFloat, position: CGPoint) -> SKShapeNode {
-        let button = SKShapeNode(rectOf: CGSize(width: width, height: height), cornerRadius: 10)
-        button.fillColor = .darkGray
-        button.strokeColor = .cyan
+    private func createTextButton(text: String, width: CGFloat, height: CGFloat, position: CGPoint, bitcoinOrange: Bool = false) -> SKShapeNode {
+        // Create button with improved styling
+        let button = SKShapeNode(rectOf: CGSize(width: width, height: height), cornerRadius: 12)
+        button.fillColor = UIColor(white: 0.2, alpha: 0.9)
+        button.strokeColor = bitcoinOrange ? 
+                            UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0) : // Bitcoin orange
+                            UIColor(red: 0, green: 0.7, blue: 0.9, alpha: 1.0) // Cyan alternative
         button.lineWidth = 2
         button.position = position
+        button.zPosition = 3
         
+        // Add subtle gradient effect
+        let gradient = SKShapeNode(rectOf: CGSize(width: width - 4, height: height - 4), cornerRadius: 10)
+        gradient.fillColor = UIColor(white: 0.25, alpha: 0.7)
+        gradient.strokeColor = .clear
+        gradient.position = CGPoint(x: 0, y: -1) // Slight offset for 3D effect
+        gradient.zPosition = -0.1
+        button.addChild(gradient)
+        
+        // Improved label styling
         let label = SKLabelNode(fontNamed: "AvenirNext-Bold")
         label.text = text
         label.fontSize = 24
         label.fontColor = .white
         label.verticalAlignmentMode = .center
         label.horizontalAlignmentMode = .center
+        label.zPosition = 0.1
         button.addChild(label)
+        
+        // Add Bitcoin symbol to reset button if it's the reset high score button
+        if text == "Reset High Score" {
+            let bitcoinSymbol = SKLabelNode(text: "₿")
+            bitcoinSymbol.fontName = "AvenirNext-Bold"
+            bitcoinSymbol.fontSize = 18
+            bitcoinSymbol.fontColor = UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0) // Bitcoin orange
+            bitcoinSymbol.position = CGPoint(x: label.position.x - 110, y: 0)
+            bitcoinSymbol.verticalAlignmentMode = .center
+            bitcoinSymbol.horizontalAlignmentMode = .center
+            button.addChild(bitcoinSymbol)
+        }
         
         return button
     }
@@ -284,8 +380,8 @@ class SettingsScene: SKScene {
         let isOn = toggle.userData?.value(forKey: "isOn") as? Bool ?? false
         let newState = !isOn
         
-        // Update the toggle appearance
-        toggle.fillColor = newState ? .systemGreen : .darkGray
+        // Update the toggle appearance with Bitcoin orange
+        toggle.fillColor = newState ? UIColor(red: 247/255, green: 147/255, blue: 26/255, alpha: 1.0) : .darkGray
         
         // Move the knob
         if let knob = toggle.childNode(withName: "knob") {
