@@ -130,13 +130,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         addChild(mainPath)
         
         // Add node markers along the path
-        for i in 0..<16 {
-            let angle = 2 * CGFloat.pi * CGFloat(i) / 16.0
+        for i in 0..<32 {
+            let angle = 2 * CGFloat.pi * CGFloat(i) / 32.0
             let xPos = center.x + cos(angle) * radius
             let yPos = center.y + sin(angle) * radius
             
-            // Create larger node points at key positions (every 4th node)
-            if i % 4 == 0 {
+            // Create larger node points at key positions (every 8th node)
+            if i % 8 == 0 {
                 // Major node - hexagonal shape to resemble Bitcoin network nodes
                 let majorNode = SKShapeNode(circleOfRadius: 7)
                 majorNode.position = CGPoint(x: xPos, y: yPos)
