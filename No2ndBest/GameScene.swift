@@ -1033,16 +1033,49 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             // Special multi-tap message for 2+ successful taps
             if totalSuccessfulTaps > 1 {
+                // Remove any existing combo label first
+                if let existingLabel = childNode(withName: "comboMessageLabel") {
+                    existingLabel.removeFromParent()
+                }
+                
                 let multiTapLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
                 multiTapLabel.fontSize = size.height * 0.04
-                multiTapLabel.position = CGPoint(x: size.width/2, y: size.height * 0.7)
+                multiTapLabel.position = CGPoint(x: size.width/2, y: size.height * 0.2) // Position at bottom of screen for better visibility
                 multiTapLabel.text = "\(totalSuccessfulTaps)x COMBO!"
                 multiTapLabel.fontColor = .yellow
+                multiTapLabel.name = "comboMessageLabel" // Named node for future reference
+                multiTapLabel.zPosition = 10 // Ensure it's above other elements
                 addChild(multiTapLabel)
                 
-                // Fade out and remove
+                // Create background to improve readability
+                let background = SKShapeNode(rectOf: CGSize(width: multiTapLabel.frame.width + 40, height: multiTapLabel.frame.height + 20), cornerRadius: 10)
+                background.fillColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.6)
+                background.position = multiTapLabel.position
+                background.zPosition = 9 // Behind the text
+                background.name = "comboBackground"
+                insertChild(background, at: 0) // Insert below text
+                
+                // Longer visibility with scale pulse effect
+                let pulseAction = SKAction.sequence([
+                    SKAction.scale(to: 1.1, duration: 0.3),
+                    SKAction.scale(to: 1.0, duration: 0.3),
+                ])
+                
+                let displayDuration = min(3.0, 1.5 + (Double(totalSuccessfulTaps) * 0.2)) // Longer duration for higher combos
+                
+                // Run pulse animation and then fade out
                 multiTapLabel.run(SKAction.sequence([
-                    SKAction.fadeAlpha(to: 0, duration: 1.0),
+                    SKAction.repeat(pulseAction, count: 2),
+                    SKAction.wait(forDuration: displayDuration),
+                    SKAction.fadeAlpha(to: 0, duration: 0.8),
+                    SKAction.removeFromParent()
+                ]))
+                
+                // Match background animation to text
+                background.run(SKAction.sequence([
+                    SKAction.repeat(pulseAction, count: 2),
+                    SKAction.wait(forDuration: displayDuration),
+                    SKAction.fadeAlpha(to: 0, duration: 0.8),
                     SKAction.removeFromParent()
                 ]))
             }
