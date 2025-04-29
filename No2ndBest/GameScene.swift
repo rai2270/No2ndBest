@@ -620,14 +620,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let symbolLabel = SKLabelNode(text: crypto.symbol)
         symbolLabel.fontName = "AvenirNext-Bold"
         symbolLabel.fontSize = min(size/2.5, 18) // Larger font size for better visibility
-        symbolLabel.fontColor = .white
+        
+        // Match text color to bubble color but darker for contrast
+        let textColor = darkerVersionOf(color: uniqueColor, factor: 0.6)
+        symbolLabel.fontColor = textColor
+        
         symbolLabel.position = CGPoint(x: 0, y: 0) // Centered in bubble
         symbolLabel.verticalAlignmentMode = .center
         symbolLabel.horizontalAlignmentMode = .center
         
-        // Add subtle glow effect to make symbols pop
-        symbolLabel.alpha = 0.95
-        bubble.addChild(symbolLabel)
+        // Add subtle glow to make text stand out
+        let glowEffect = SKEffectNode()
+        glowEffect.shouldEnableEffects = true
+        glowEffect.filter = CIFilter(name: "CIGaussianBlur", parameters: ["inputRadius": 0.5])
+        glowEffect.addChild(symbolLabel)
+        glowEffect.alpha = 1.0
+        bubble.addChild(glowEffect)
         
         // Position the bubble in the upper area of the screen, above the game circle
         let safeAreaTop = self.size.height * 0.85
@@ -1535,14 +1543,26 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         bubble.lineWidth = 0
         bubble.name = "bubble_" + randomCoin.symbol
         
-        // Add symbol label
+        // Add symbol label with enhanced styling
         let symbolLabel = SKLabelNode(text: randomCoin.symbol)
         symbolLabel.fontName = "AvenirNext-Bold"
         symbolLabel.fontSize = min(size/3, 16)
-        symbolLabel.fontColor = UIColor.white
+        
+        // Match text color to bubble color but darker for contrast
+        let textColor = darkerVersionOf(color: coinColor, factor: 0.6)
+        symbolLabel.fontColor = textColor
+        
         symbolLabel.position = CGPoint(x: 0, y: 0)
-        symbolLabel.verticalAlignmentMode = SKLabelVerticalAlignmentMode.center
-        bubble.addChild(symbolLabel)
+        symbolLabel.verticalAlignmentMode = .center
+        symbolLabel.horizontalAlignmentMode = .center
+        
+        // Add subtle glow to make text stand out
+        let glowEffect = SKEffectNode()
+        glowEffect.shouldEnableEffects = true
+        glowEffect.filter = CIFilter(name: "CIGaussianBlur", parameters: ["inputRadius": 0.5])
+        glowEffect.addChild(symbolLabel)
+        glowEffect.alpha = 1.0
+        bubble.addChild(glowEffect)
         
         // Add shimmer effect
         let shimmerAction = SKAction.sequence([
@@ -1660,6 +1680,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Return the eye-friendly color from the palette
         return eyeFriendlyColors[index]
+    }
+    
+    // Helper function to create a darker version of a color for better text contrast
+    private func darkerVersionOf(color: UIColor, factor: CGFloat) -> UIColor {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        
+        if color.getRed(&r, green: &g, blue: &b, alpha: &a) {
+            return UIColor(
+                red: max(r * factor, 0.0),
+                green: max(g * factor, 0.0),
+                blue: max(b * factor, 0.0),
+                alpha: a
+            )
+        }
+        
+        return color
     }
     
     // Distribute bubbles around the screen like cryptobubbles.net - avoiding center circle
