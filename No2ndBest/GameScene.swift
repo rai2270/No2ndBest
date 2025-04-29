@@ -605,9 +605,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let uniqueColor = getUniqueColorForSymbol(crypto.symbol)
         bubble.fillColor = uniqueColor
         
-        // Add glowing stroke based on price change direction
-        bubble.strokeColor = crypto.priceChangePercentage24h >= 0 ? .green : .red
-        bubble.lineWidth = 2.0
+        // Remove border from bubbles
+        bubble.strokeColor = .clear
+        bubble.lineWidth = 0
         
         // Add shimmer effect to make bubbles more visually appealing
         let shimmerAction = SKAction.sequence([
@@ -1531,8 +1531,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let size = randomCoin.bubbleSize * CGFloat.random(in: 0.8...1.2) // Add some randomness
         let bubble = SKShapeNode(circleOfRadius: size/2)
         bubble.fillColor = coinColor
-        bubble.strokeColor = randomCoin.priceChangePercentage24h >= 0 ? UIColor.green : UIColor.red
-        bubble.lineWidth = 2.0
+        bubble.strokeColor = .clear
+        bubble.lineWidth = 0
         bubble.name = "bubble_" + randomCoin.symbol
         
         // Add symbol label
