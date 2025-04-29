@@ -605,29 +605,36 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let uniqueColor = getUniqueColorForSymbol(crypto.symbol)
         bubble.fillColor = uniqueColor
         
-        // Add glowing stroke based on price change direction
-        bubble.strokeColor = crypto.priceChangePercentage24h >= 0 ? .green : .red
-        bubble.lineWidth = 2.0
+        // Remove border from bubbles
+        bubble.strokeColor = .clear
+        bubble.lineWidth = 0
         
-        // Add shimmer effect to make bubbles more visually appealing
-        let shimmerAction = SKAction.sequence([
-            SKAction.fadeAlpha(to: 0.7, duration: 1.0),
-            SKAction.fadeAlpha(to: 1.0, duration: 1.0)
-        ])
-        bubble.run(SKAction.repeatForever(shimmerAction))
+        // Set bubble to solid opacity without animation
+        bubble.alpha = 1.0
         
         // Add the cryptocurrency symbol with enhanced styling (no price display needed)
-        let symbolLabel = SKLabelNode(text: crypto.symbol)
+        // Truncate very long symbols to ensure they fit
+        let displaySymbol = crypto.symbol.count > 5 ? String(crypto.symbol.prefix(5)) : crypto.symbol
+        let symbolLabel = SKLabelNode(text: displaySymbol)
         symbolLabel.fontName = "AvenirNext-Bold"
-        symbolLabel.fontSize = min(size/2.5, 18) // Larger font size for better visibility
-        symbolLabel.fontColor = .white
+        // More conservative font sizing to ensure text fits within bubbles
+        symbolLabel.fontSize = min(size/3.0, 16) // Scaled down for better fit
+        
+        // Match text color to bubble color but darker for contrast
+        let textColor = darkerVersionOf(color: uniqueColor, factor: 0.6)
+        symbolLabel.fontColor = textColor
+        
         symbolLabel.position = CGPoint(x: 0, y: 0) // Centered in bubble
         symbolLabel.verticalAlignmentMode = .center
         symbolLabel.horizontalAlignmentMode = .center
         
-        // Add subtle glow effect to make symbols pop
-        symbolLabel.alpha = 0.95
-        bubble.addChild(symbolLabel)
+        // Add subtle glow to make text stand out
+        let glowEffect = SKEffectNode()
+        glowEffect.shouldEnableEffects = true
+        glowEffect.filter = CIFilter(name: "CIGaussianBlur", parameters: ["inputRadius": 0.5])
+        glowEffect.addChild(symbolLabel)
+        glowEffect.alpha = 1.0
+        bubble.addChild(glowEffect)
         
         // Position the bubble in the upper area of the screen, above the game circle
         let safeAreaTop = self.size.height * 0.85
@@ -1026,16 +1033,49 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             // Special multi-tap message for 2+ successful taps
             if totalSuccessfulTaps > 1 {
+                // Remove any existing combo label first
+                if let existingLabel = childNode(withName: "comboMessageLabel") {
+                    existingLabel.removeFromParent()
+                }
+                
                 let multiTapLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
                 multiTapLabel.fontSize = size.height * 0.04
-                multiTapLabel.position = CGPoint(x: size.width/2, y: size.height * 0.7)
+                multiTapLabel.position = CGPoint(x: size.width/2, y: size.height * 0.2) // Position at bottom of screen for better visibility
                 multiTapLabel.text = "\(totalSuccessfulTaps)x COMBO!"
                 multiTapLabel.fontColor = .yellow
+                multiTapLabel.name = "comboMessageLabel" // Named node for future reference
+                multiTapLabel.zPosition = 10 // Ensure it's above other elements
                 addChild(multiTapLabel)
                 
-                // Fade out and remove
+                // Create background to improve readability
+                let background = SKShapeNode(rectOf: CGSize(width: multiTapLabel.frame.width + 40, height: multiTapLabel.frame.height + 20), cornerRadius: 10)
+                background.fillColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.6)
+                background.position = multiTapLabel.position
+                background.zPosition = 9 // Behind the text
+                background.name = "comboBackground"
+                insertChild(background, at: 0) // Insert below text
+                
+                // Longer visibility with scale pulse effect
+                let pulseAction = SKAction.sequence([
+                    SKAction.scale(to: 1.1, duration: 0.3),
+                    SKAction.scale(to: 1.0, duration: 0.3),
+                ])
+                
+                let displayDuration = min(3.0, 1.5 + (Double(totalSuccessfulTaps) * 0.2)) // Longer duration for higher combos
+                
+                // Run pulse animation and then fade out
                 multiTapLabel.run(SKAction.sequence([
-                    SKAction.fadeAlpha(to: 0, duration: 1.0),
+                    SKAction.repeat(pulseAction, count: 2),
+                    SKAction.wait(forDuration: displayDuration),
+                    SKAction.fadeAlpha(to: 0, duration: 0.8),
+                    SKAction.removeFromParent()
+                ]))
+                
+                // Match background animation to text
+                background.run(SKAction.sequence([
+                    SKAction.repeat(pulseAction, count: 2),
+                    SKAction.wait(forDuration: displayDuration),
+                    SKAction.fadeAlpha(to: 0, duration: 0.8),
                     SKAction.removeFromParent()
                 ]))
             }
@@ -1531,25 +1571,36 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let size = randomCoin.bubbleSize * CGFloat.random(in: 0.8...1.2) // Add some randomness
         let bubble = SKShapeNode(circleOfRadius: size/2)
         bubble.fillColor = coinColor
-        bubble.strokeColor = randomCoin.priceChangePercentage24h >= 0 ? UIColor.green : UIColor.red
-        bubble.lineWidth = 2.0
+        bubble.strokeColor = .clear
+        bubble.lineWidth = 0
         bubble.name = "bubble_" + randomCoin.symbol
         
-        // Add symbol label
-        let symbolLabel = SKLabelNode(text: randomCoin.symbol)
+        // Add symbol label with enhanced styling
+        // Truncate very long symbols to ensure they fit
+        let displaySymbol = randomCoin.symbol.count > 5 ? String(randomCoin.symbol.prefix(5)) : randomCoin.symbol
+        let symbolLabel = SKLabelNode(text: displaySymbol)
         symbolLabel.fontName = "AvenirNext-Bold"
-        symbolLabel.fontSize = min(size/3, 16)
-        symbolLabel.fontColor = UIColor.white
-        symbolLabel.position = CGPoint(x: 0, y: 0)
-        symbolLabel.verticalAlignmentMode = SKLabelVerticalAlignmentMode.center
-        bubble.addChild(symbolLabel)
+        // More conservative font sizing to ensure text fits within bubbles
+        symbolLabel.fontSize = min(size/3.5, 14) // Scaled down for better fit
         
-        // Add shimmer effect
-        let shimmerAction = SKAction.sequence([
-            SKAction.fadeAlpha(to: 0.7, duration: 1.0),
-            SKAction.fadeAlpha(to: 1.0, duration: 1.0)
-        ])
-        bubble.run(SKAction.repeatForever(shimmerAction))
+        // Match text color to bubble color but darker for contrast
+        let textColor = darkerVersionOf(color: coinColor, factor: 0.6)
+        symbolLabel.fontColor = textColor
+        
+        symbolLabel.position = CGPoint(x: 0, y: 0)
+        symbolLabel.verticalAlignmentMode = .center
+        symbolLabel.horizontalAlignmentMode = .center
+        
+        // Add subtle glow to make text stand out
+        let glowEffect = SKEffectNode()
+        glowEffect.shouldEnableEffects = true
+        glowEffect.filter = CIFilter(name: "CIGaussianBlur", parameters: ["inputRadius": 0.5])
+        glowEffect.addChild(symbolLabel)
+        glowEffect.alpha = 1.0
+        bubble.addChild(glowEffect)
+        
+        // Set bubble to solid opacity without animation
+        bubble.alpha = 1.0
         
         // Position at the edge of the screen with a bit of randomness
         let entryPoint = Int.random(in: 0...3) // 0: top, 1: right, 2: bottom, 3: left
@@ -1633,28 +1684,49 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Convert symbol to lowercase to ensure consistent coloring
         let symbolLower = symbol.lowercased()
         
-        // Use the symbol's letters to create a unique but consistent color
-        var hue: CGFloat = 0
-        let saturation: CGFloat = 0.85  // High saturation for vibrant colors
-        var brightness: CGFloat = 0.9   // Good brightness for visibility
+        // Use predefined eye-friendly color palette
+        let eyeFriendlyColors: [UIColor] = [
+            UIColor(red: 142/255, green: 202/255, blue: 230/255, alpha: 1.0),  // Soft blue
+            UIColor(red: 251/255, green: 191/255, blue: 188/255, alpha: 1.0),  // Soft pink
+            UIColor(red: 173/255, green: 216/255, blue: 199/255, alpha: 1.0),  // Mint green
+            UIColor(red: 253/255, green: 231/255, blue: 146/255, alpha: 1.0),  // Soft yellow
+            UIColor(red: 155/255, green: 167/255, blue: 225/255, alpha: 1.0),  // Lavender
+            UIColor(red: 243/255, green: 166/255, blue: 131/255, alpha: 1.0),  // Peach
+            UIColor(red: 199/255, green: 206/255, blue: 234/255, alpha: 1.0),  // Periwinkle
+            UIColor(red: 168/255, green: 230/255, blue: 207/255, alpha: 1.0),  // Aqua
+            UIColor(red: 241/255, green: 211/255, blue: 189/255, alpha: 1.0),  // Beige
+            UIColor(red: 204/255, green: 204/255, blue: 255/255, alpha: 1.0),  // Light purple
+            UIColor(red: 204/255, green: 229/255, blue: 255/255, alpha: 1.0),  // Light blue
+            UIColor(red: 255/255, green: 204/255, blue: 204/255, alpha: 1.0),  // Light coral
+        ]
         
-        // Calculate hue based on the ASCII values of the symbol's letters
-        if let firstChar = symbolLower.unicodeScalars.first?.value {
-            // Use the first character to get the primary hue (0-1 range)
-            hue = CGFloat(firstChar % 26) / 26.0
-            
-            // Adjust hue slightly based on the entire string to ensure uniqueness
-            if symbolLower.count > 1 {
-                let secondCharValue = symbolLower.unicodeScalars[symbolLower.index(symbolLower.startIndex, offsetBy: 1)].value
-                hue = (hue + CGFloat(secondCharValue % 10) / 100.0).truncatingRemainder(dividingBy: 1.0)
-            }
-            
-            // Adjust brightness slightly based on string length
-            brightness = min(0.95, 0.8 + CGFloat(symbolLower.count) / 50.0)
+        // Calculate a deterministic index based on the symbol's characters
+        var index = 0
+        for char in symbolLower.unicodeScalars {
+            index += Int(char.value)
         }
         
-        // Create color from HSB values
-        return UIColor(hue: hue, saturation: saturation, brightness: brightness, alpha: 1.0)
+        // Use modulo to get an index within the array bounds
+        index = index % eyeFriendlyColors.count
+        
+        // Return the eye-friendly color from the palette
+        return eyeFriendlyColors[index]
+    }
+    
+    // Helper function to create a darker version of a color for better text contrast
+    private func darkerVersionOf(color: UIColor, factor: CGFloat) -> UIColor {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        
+        if color.getRed(&r, green: &g, blue: &b, alpha: &a) {
+            return UIColor(
+                red: max(r * factor, 0.0),
+                green: max(g * factor, 0.0),
+                blue: max(b * factor, 0.0),
+                alpha: a
+            )
+        }
+        
+        return color
     }
     
     // Distribute bubbles around the screen like cryptobubbles.net - avoiding center circle
