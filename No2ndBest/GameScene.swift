@@ -617,9 +617,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         bubble.run(SKAction.repeatForever(shimmerAction))
         
         // Add the cryptocurrency symbol with enhanced styling (no price display needed)
-        let symbolLabel = SKLabelNode(text: crypto.symbol)
+        // Truncate very long symbols to ensure they fit
+        let displaySymbol = crypto.symbol.count > 5 ? String(crypto.symbol.prefix(5)) : crypto.symbol
+        let symbolLabel = SKLabelNode(text: displaySymbol)
         symbolLabel.fontName = "AvenirNext-Bold"
-        symbolLabel.fontSize = min(size/2.5, 18) // Larger font size for better visibility
+        // More conservative font sizing to ensure text fits within bubbles
+        symbolLabel.fontSize = min(size/3.0, 16) // Scaled down for better fit
         
         // Match text color to bubble color but darker for contrast
         let textColor = darkerVersionOf(color: uniqueColor, factor: 0.6)
@@ -1544,9 +1547,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         bubble.name = "bubble_" + randomCoin.symbol
         
         // Add symbol label with enhanced styling
-        let symbolLabel = SKLabelNode(text: randomCoin.symbol)
+        // Truncate very long symbols to ensure they fit
+        let displaySymbol = randomCoin.symbol.count > 5 ? String(randomCoin.symbol.prefix(5)) : randomCoin.symbol
+        let symbolLabel = SKLabelNode(text: displaySymbol)
         symbolLabel.fontName = "AvenirNext-Bold"
-        symbolLabel.fontSize = min(size/3, 16)
+        // More conservative font sizing to ensure text fits within bubbles
+        symbolLabel.fontSize = min(size/3.5, 14) // Scaled down for better fit
         
         // Match text color to bubble color but darker for contrast
         let textColor = darkerVersionOf(color: coinColor, factor: 0.6)
