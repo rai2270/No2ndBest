@@ -1633,28 +1633,33 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Convert symbol to lowercase to ensure consistent coloring
         let symbolLower = symbol.lowercased()
         
-        // Use the symbol's letters to create a unique but consistent color
-        var hue: CGFloat = 0
-        let saturation: CGFloat = 0.85  // High saturation for vibrant colors
-        var brightness: CGFloat = 0.9   // Good brightness for visibility
+        // Use predefined eye-friendly color palette
+        let eyeFriendlyColors: [UIColor] = [
+            UIColor(red: 142/255, green: 202/255, blue: 230/255, alpha: 1.0),  // Soft blue
+            UIColor(red: 251/255, green: 191/255, blue: 188/255, alpha: 1.0),  // Soft pink
+            UIColor(red: 173/255, green: 216/255, blue: 199/255, alpha: 1.0),  // Mint green
+            UIColor(red: 253/255, green: 231/255, blue: 146/255, alpha: 1.0),  // Soft yellow
+            UIColor(red: 155/255, green: 167/255, blue: 225/255, alpha: 1.0),  // Lavender
+            UIColor(red: 243/255, green: 166/255, blue: 131/255, alpha: 1.0),  // Peach
+            UIColor(red: 199/255, green: 206/255, blue: 234/255, alpha: 1.0),  // Periwinkle
+            UIColor(red: 168/255, green: 230/255, blue: 207/255, alpha: 1.0),  // Aqua
+            UIColor(red: 241/255, green: 211/255, blue: 189/255, alpha: 1.0),  // Beige
+            UIColor(red: 204/255, green: 204/255, blue: 255/255, alpha: 1.0),  // Light purple
+            UIColor(red: 204/255, green: 229/255, blue: 255/255, alpha: 1.0),  // Light blue
+            UIColor(red: 255/255, green: 204/255, blue: 204/255, alpha: 1.0),  // Light coral
+        ]
         
-        // Calculate hue based on the ASCII values of the symbol's letters
-        if let firstChar = symbolLower.unicodeScalars.first?.value {
-            // Use the first character to get the primary hue (0-1 range)
-            hue = CGFloat(firstChar % 26) / 26.0
-            
-            // Adjust hue slightly based on the entire string to ensure uniqueness
-            if symbolLower.count > 1 {
-                let secondCharValue = symbolLower.unicodeScalars[symbolLower.index(symbolLower.startIndex, offsetBy: 1)].value
-                hue = (hue + CGFloat(secondCharValue % 10) / 100.0).truncatingRemainder(dividingBy: 1.0)
-            }
-            
-            // Adjust brightness slightly based on string length
-            brightness = min(0.95, 0.8 + CGFloat(symbolLower.count) / 50.0)
+        // Calculate a deterministic index based on the symbol's characters
+        var index = 0
+        for char in symbolLower.unicodeScalars {
+            index += Int(char.value)
         }
         
-        // Create color from HSB values
-        return UIColor(hue: hue, saturation: saturation, brightness: brightness, alpha: 1.0)
+        // Use modulo to get an index within the array bounds
+        index = index % eyeFriendlyColors.count
+        
+        // Return the eye-friendly color from the palette
+        return eyeFriendlyColors[index]
     }
     
     // Distribute bubbles around the screen like cryptobubbles.net - avoiding center circle
