@@ -609,12 +609,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         bubble.strokeColor = .clear
         bubble.lineWidth = 0
         
-        // Add shimmer effect to make bubbles more visually appealing
-        let shimmerAction = SKAction.sequence([
-            SKAction.fadeAlpha(to: 0.7, duration: 1.0),
-            SKAction.fadeAlpha(to: 1.0, duration: 1.0)
-        ])
-        bubble.run(SKAction.repeatForever(shimmerAction))
+        // Set bubble to solid opacity without animation
+        bubble.alpha = 1.0
         
         // Add the cryptocurrency symbol with enhanced styling (no price display needed)
         // Truncate very long symbols to ensure they fit
@@ -1570,12 +1566,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         glowEffect.alpha = 1.0
         bubble.addChild(glowEffect)
         
-        // Add shimmer effect
-        let shimmerAction = SKAction.sequence([
-            SKAction.fadeAlpha(to: 0.7, duration: 1.0),
-            SKAction.fadeAlpha(to: 1.0, duration: 1.0)
-        ])
-        bubble.run(SKAction.repeatForever(shimmerAction))
+        // Set bubble to solid opacity without animation
+        bubble.alpha = 1.0
         
         // Position at the edge of the screen with a bit of randomness
         let entryPoint = Int.random(in: 0...3) // 0: top, 1: right, 2: bottom, 3: left
