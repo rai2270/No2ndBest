@@ -958,12 +958,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 // Fire lightning attack on successful tap
                 fireLightningAttack()
                 
+                // TEMPORARILY COMMENTED OUT TO TEST PERFORMANCE
                 // Play success sound
-                SoundManager.shared.playSound(.successTap)
+                // SoundManager.shared.playSound(.successTap)
                 
                 // Haptic feedback for success
-                let generator = UIImpactFeedbackGenerator(style: .medium)
-                generator.impactOccurred()
+                // let generator = UIImpactFeedbackGenerator(style: .medium)
+                // generator.impactOccurred()
             } else {
                 // Failed tap
                 missedTaps += 1
@@ -1275,12 +1276,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         
+        // TEMPORARILY COMMENTED OUT TO TEST PERFORMANCE
         // Play sound effect
-        SoundManager.shared.playSound(.successTap)
+        // SoundManager.shared.playSound(.successTap)
         
         // Provide haptic feedback
-        let generator = UIImpactFeedbackGenerator(style: .heavy)
-        generator.impactOccurred()
+        // let generator = UIImpactFeedbackGenerator(style: .heavy)
+        // generator.impactOccurred()
     }
     
     // MARK: - Bitcoin Hash Power Visualization
