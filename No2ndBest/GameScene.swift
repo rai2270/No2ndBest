@@ -29,6 +29,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private var highScore: Int = 0
     private var gameRunning = false
     private var lastTapTime: TimeInterval = 0
+    private var lastSoundTime: TimeInterval = 0
+    private let soundCooldown: TimeInterval = 0.2 // Minimum time between sounds
     private var currentTime: TimeInterval = 0
     private var lastShownQuote: String = ""  // Track last shown quote to avoid repetition
     private var gameSpeed: CGFloat = 1.0
@@ -958,11 +960,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 // Fire lightning attack on successful tap
                 fireLightningAttack()
                 
-                // TEMPORARILY COMMENTED OUT TO TEST PERFORMANCE
-                // Play success sound
-                // SoundManager.shared.playSound(.successTap)
+                // Play success sound with cooldown to prevent lag
+                if currentTime - lastSoundTime > soundCooldown {
+                    SoundManager.shared.playSound(.successTap)
+                    lastSoundTime = currentTime
+                }
                 
-                // Haptic feedback for success
+                // Haptic feedback disabled for performance
                 // let generator = UIImpactFeedbackGenerator(style: .medium)
                 // generator.impactOccurred()
             } else {
@@ -1276,11 +1280,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         
-        // TEMPORARILY COMMENTED OUT TO TEST PERFORMANCE
-        // Play sound effect
-        // SoundManager.shared.playSound(.successTap)
+        // Play sound effect with cooldown to prevent lag
+        let currentTime = self.currentTime
+        if currentTime - lastSoundTime > soundCooldown {
+            SoundManager.shared.playSound(.successTap)
+            lastSoundTime = currentTime
+        }
         
-        // Provide haptic feedback
+        // Haptic feedback disabled for performance
         // let generator = UIImpactFeedbackGenerator(style: .heavy)
         // generator.impactOccurred()
     }
